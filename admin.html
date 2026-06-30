@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PeopleCore — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--p:#4F46E5;--pl:#EEF2FF;--pd:#3730A3;--s:#0EA5E9;--ok:#10B981;--okl:#D1FAE5;--wa:#F59E0B;--wal:#FEF3C7;--er:#EF4444;--erl:#FEE2E2;--bg:#F8FAFC;--sf:#fff;--sb:#1E1B4B;--sbt:#C7D2FE;--sbh:#312E81;--tx:#1E293B;--tm:#64748B;--tl:#94A3B8;--bd:#E2E8F0;--r:9px;--sh:0 1px 3px rgba(0,0,0,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5}
+/* SHELL */
+.shell{display:flex;height:100vh;overflow:hidden}
+/* SIDEBAR */
+.sb{width:235px;background:var(--sb);display:flex;flex-direction:column;flex-shrink:0}
+.sb-hd{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-ico{width:34px;height:34px;background:var(--p);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.sb-ico i{color:white;font-size:15px}
+.sb-title{color:white;font-weight:700;font-size:15px}
+.sb-user{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
+.u-name{color:white;font-size:13px;font-weight:600}
+.u-role{color:var(--sbt);font-size:11px}
+.sb-nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nl{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;padding:8px 10px 3px}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;color:var(--sbt);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px}
+.ni:hover{background:var(--sbh);color:white}
+.ni.on{background:var(--p);color:white}
+.ni i{width:17px;text-align:center;font-size:13px}
+.nb{margin-left:auto;background:var(--er);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.sb-ft{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08)}
+/* TOPBAR */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:white;border-bottom:1px solid var(--bd);padding:0 22px;height:58px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh);flex-shrink:0}
+.tb-title{font-size:15px;font-weight:700}
+.tb-search{flex:1;max-width:300px;position:relative}
+.tb-search input{width:100%;padding:8px 12px 8px 34px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;outline:none;background:var(--bg)}
+.tb-search i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--tl);font-size:12px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.ib{width:34px;height:34px;border-radius:8px;border:1px solid var(--bd);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tm);position:relative}
+.nd{width:7px;height:7px;background:var(--er);border-radius:50%;position:absolute;top:6px;right:6px;border:2px solid white}
+.lob{padding:7px 13px;border:1px solid var(--bd);border-radius:7px;background:white;color:var(--tm);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
+/* CONTENT */
+.ct{flex:1;overflow-y:auto;padding:22px}
+/* PAGE */
+.pg{display:none}.pg.on{display:block}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.ph h2{font-size:19px;font-weight:700}
+.ph p{font-size:13px;color:var(--tm);margin-top:2px}
+/* STAT GRID */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.sc{background:white;border-radius:var(--r);padding:18px;border:1px solid var(--bd);position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.sc.b::before{background:var(--p)}.sc.g::before{background:var(--ok)}.sc.a::before{background:var(--wa)}.sc.r::before{background:var(--er)}
+.sc .sl{font-size:11px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sc .sv{font-size:26px;font-weight:700;line-height:1;margin-bottom:5px}
+.sc .ss{font-size:12px;color:var(--tl)}
+.sc .si{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.sc.b .si{background:var(--pl);color:var(--p)}.sc.g .si{background:var(--okl);color:var(--ok)}.sc.a .si{background:var(--wal);color:var(--wa)}.sc.r .si{background:var(--erl);color:var(--er)}
+/* CARD */
+.card{background:white;border-radius:var(--r);border:1px solid var(--bd);box-shadow:var(--sh)}
+.ch{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.ct2{padding:18px}.cf{padding:12px 18px;border-top:1px solid var(--bd)}
+.ctitle{font-size:14px;font-weight:700}
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;padding:9px 13px;background:var(--bg);border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:middle}
+tr:hover td{background:#FAFBFD}
+tr:last-child td{border-bottom:none}
+/* BADGE */
+.bx{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.ok{background:var(--okl);color:#065F46}.wa{background:var(--wal);color:#92400E}.er{background:var(--erl);color:#991B1B}.pr{background:var(--pl);color:var(--pd)}.gy{background:#F1F5F9;color:#475569}.bl{background:#DBEAFE;color:#1D4ED8}.pu{background:#EDE9FE;color:#5B21B6}
+/* BTN */
+.btn{padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.bp{background:var(--p);color:white}.bp:hover{background:var(--pd)}
+.bs{background:var(--ok);color:white}
+.bd2{background:var(--er);color:white}
+.bo{background:white;border:1px solid var(--bd);color:var(--tx)}.bo:hover{background:var(--bg)}
+.bsm{padding:5px 9px;font-size:12px}
+.bic{width:28px;height:28px;padding:0;justify-content:center}
+/* FORM */
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.fr.f1{grid-template-columns:1fr}
+.fr.f3{grid-template-columns:1fr 1fr 1fr}
+.lbl{display:block;font-size:11px;font-weight:700;color:var(--tm);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+input.i,select.i,textarea.i{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;color:var(--tx);outline:none;background:white;transition:border-color .2s;font-family:inherit}
+input.i:focus,select.i:focus,textarea.i:focus{border-color:var(--p)}
+textarea.i{resize:vertical;min-height:76px}
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000;align-items:center;justify-content:center}
+.mo.op{display:flex}
+.md{background:white;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:580px;max-height:88vh;overflow-y:auto}
+.mh{padding:18px 22px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;border-radius:14px 14px 0 0}
+.mt{font-size:15px;font-weight:700}
+.mb2{padding:22px}
+.mf{padding:14px 22px;border-bottom:1px solid var(--bd); border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:white}
+.xb{width:28px;height:28px;border-radius:6px;border:1px solid var(--bd);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tm)}
+/* MISC */
+.av32{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
+.flex{display:flex;align-items:center}
+.gap2{gap:8px}.gap3{gap:12px}
+.mb3{margin-bottom:12px}.mb4{margin-bottom:16px}.mb5{margin-bottom:20px}
+.ri{padding:11px 0;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ri:last-child{border-bottom:none}
+.ai{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.ai:last-child{border-bottom:none}
+.prog{height:6px;background:var(--bd);border-radius:3px;overflow:hidden}
+.pb{height:100%;border-radius:3px}
+.divider{height:1px;background:var(--bd);margin:16px 0}
+#toast{position:fixed;bottom:22px;right:22px;background:var(--tx);color:white;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);transition:transform .3s;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+#toast.show{transform:translateY(0)}
+#toast.ok{background:var(--ok)}
+#toast.wa{background:var(--wa)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+.lb{margin-bottom:12px}
+.lbh{display:flex;justify-content:space-between;margin-bottom:3px;font-size:13px}
+.loading{text-align:center;padding:40px;color:var(--tm);font-size:13px}
+.empty{text-align:center;padding:40px;color:var(--tl)}
+.empty i{font-size:32px;margin-bottom:10px;display:block;opacity:.4}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdh{text-align:center;font-size:10px;font-weight:700;color:var(--tm);padding:5px 0;text-transform:uppercase}
+.cd{min-height:32px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:12px;cursor:pointer;transition:background .1s}
+.cd.today{background:var(--p);color:white;font-weight:700}
+.cd.hol{background:var(--erl);color:var(--er);font-weight:600}
+.cd.wkd{color:var(--tl)}
+.cd.lv{background:var(--wal);color:#92400E}
+.payslip-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.payslip-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sb">
+    <div class="sb-hd"><div class="sb-ico"><i class="fas fa-people-group"></i></div><span class="sb-title">PeopleCore</span></div>
+    <div class="sb-user">
+      <div class="av" id="sb-av" style="background:#4F46E5">--</div>
+      <div><div class="u-name" id="sb-name">Loading…</div><div class="u-role">Admin</div></div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nl">Overview</div>
+      <div class="ni on" data-pg="dashboard"><i class="fas fa-house"></i>Dashboard</div>
+      <div class="ni" data-pg="employees"><i class="fas fa-users"></i>Employees</div>
+      <div class="nl">Time & Attendance</div>
+      <div class="ni" data-pg="attendance"><i class="fas fa-fingerprint"></i>Attendance</div>
+      <div class="ni" data-pg="leaves"><i class="fas fa-umbrella-beach"></i>Leave Management<span class="nb" id="leave-badge">0</span></div>
+      <div class="nl">Finance</div>
+      <div class="ni" data-pg="payroll"><i class="fas fa-money-bill-wave"></i>Payroll</div>
+      <div class="ni" data-pg="incentives"><i class="fas fa-award"></i>Bonuses & Incentives</div>
+      <div class="nl">Company</div>
+      <div class="ni" data-pg="holidays"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" data-pg="departments"><i class="fas fa-sitemap"></i>Departments</div>
+      <div class="nl">People</div>
+      <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
+      <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
+      <div class="ni" data-pg="reports"><i class="fas fa-chart-bar"></i>Reports</div>
+    </nav>
+    <div class="sb-ft">
+      <div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-title" id="tb-title">Dashboard</div>
+      <div class="tb-search"><i class="fas fa-search"></i><input id="search-inp" placeholder="Search employees…" oninput="searchEmployees(this.value)"></div>
+      <div class="tb-right">
+        <div class="ib"><i class="fas fa-bell"></i><div class="nd"></div></div>
+        <button class="lob" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</button>
+      </div>
+    </div>
+    <div class="ct" id="ct">
+      <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="mo" onclick="if(event.target===this)closeMo()"><div class="md" id="md"></div></div>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+const {createClient}=supabase;
+const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let me=null, employees=[], departments=[], holidays=[], currentPage='dashboard';
+const COLORS=['#4F46E5','#7C3AED','#059669','#DC2626','#D97706','#0891B2','#0F766E','#9333EA','#BE185D'];
+
+// ─── INIT ───
+async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  const {data:emp}=await sb.from('employees').select('*').eq('user_id',session.user.id).single();
+  if(!emp||emp.role!=='admin'){location.href='index.html';return;}
+  me=emp;
+  document.getElementById('sb-av').textContent=initials(emp.first_name,emp.last_name);
+  document.getElementById('sb-av').style.background=emp.avatar_color||'#4F46E5';
+  document.getElementById('sb-name').textContent=emp.first_name+' '+emp.last_name;
+  await Promise.all([loadEmployees(),loadDepartments(),loadHolidays()]);
+  await updateLeaveBadge();
+  document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>navigate(el.dataset.pg));
+  navigate('dashboard');
+}
+
+async function loadEmployees(){
+  const {data}=await sb.from('employees').select('*').order('first_name');
+  employees=data||[];
+}
+async function loadDepartments(){
+  const {data}=await sb.from('departments').select('*').order('name');
+  departments=data||[];
+}
+async function loadHolidays(){
+  const {data}=await sb.from('holidays').select('*').order('date');
+  holidays=data||[];
+}
+async function updateLeaveBadge(){
+  const {count}=await sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending');
+  const el=document.getElementById('leave-badge');
+  el.textContent=count||0;
+  el.style.display=(count&&count>0)?'inline':'none';
+}
+
+// ─── NAVIGATE ───
+function navigate(pg){
+  currentPage=pg;
+  document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
+  const titles={dashboard:'Dashboard',employees:'Employees',attendance:'Attendance',leaves:'Leave Management',payroll:'Payroll',incentives:'Bonuses & Incentives',holidays:'Holiday Calendar',departments:'Departments',wellbeing:'Employee Wellbeing',announcements:'Announcements',reports:'Reports & Analytics'};
+  document.getElementById('tb-title').textContent=titles[pg]||pg;
+  const ct=document.getElementById('ct');
+  ct.innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+  const renders={dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,reports:renderReports};
+  if(renders[pg]) renders[pg]();
+}
+
+// ─── DASHBOARD ───
+async function renderDashboard(){
+  const today=new Date().toISOString().split('T')[0];
+  const [{count:totalEmp},{count:presentToday},{count:pendingLeaves},{data:pendingLeaveList}]=await Promise.all([
+    sb.from('employees').select('id',{count:'exact',head:true}).eq('status','active'),
+    sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('status','present'),
+    sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+    sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,department)').eq('status','pending').limit(5),
+  ]);
+  const {data:announcements}=await sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(3);
+  const upcoming=holidays.filter(h=>h.date>=today).slice(0,4);
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Admin Dashboard</h2><p>${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></div>
+    <button class="btn bp" onclick="openAddEmployee()"><i class="fas fa-plus"></i> Add Employee</button></div>
+  <div class="sg">
+    <div class="sc b"><div class="sl">Total Employees</div><div class="sv">${totalEmp||0}</div><div class="ss">Active workforce</div><div class="si"><i class="fas fa-users"></i></div></div>
+    <div class="sc g"><div class="sl">Present Today</div><div class="sv">${presentToday||0}</div><div class="ss">Clocked in</div><div class="si"><i class="fas fa-circle-check"></i></div></div>
+    <div class="sc a"><div class="sl">Pending Leaves</div><div class="sv">${pendingLeaves||0}</div><div class="ss">Need review</div><div class="si"><i class="fas fa-clock"></i></div></div>
+    <div class="sc r"><div class="sl">Departments</div><div class="sv">${departments.length}</div><div class="ss">Across company</div><div class="si"><i class="fas fa-sitemap"></i></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ctitle">Pending Leave Requests</span><span class="bx wa">${pendingLeaves||0} pending</span></div>
+      <div class="ct2">${pendingLeaveList&&pendingLeaveList.length?pendingLeaveList.map(l=>`
+      <div class="ri"><div class="flex gap2">
+        <div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${initials(l.employees?.first_name||'?',l.employees?.last_name||'')}</div>
+        <div><div style="font-size:13px;font-weight:600">${l.employees?.first_name} ${l.employees?.last_name}</div>
+        <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fmtDate(l.from_date)}</div></div></div>
+        <div class="flex gap2">
+          <button class="btn bs bsm bic" onclick="actLeave('${l.id}','approved')"><i class="fas fa-check"></i></button>
+          <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected')"><i class="fas fa-times"></i></button>
+        </div></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending requests</div>'}</div>
+    </div>
+    <div class="card"><div class="ch"><span class="ctitle">Upcoming Holidays</span></div>
+      <div class="ct2">${upcoming.map(h=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <div style="text-align:center;min-width:40px;background:var(--pl);border-radius:7px;padding:4px">
+          <div style="font-size:17px;font-weight:700;color:var(--p)">${new Date(h.date+'T00:00:00').getDate()}</div>
+          <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div></div>
+        <div><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
+      </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  ${announcements&&announcements.length?`<div class="card"><div class="ch"><span class="ctitle">Recent Announcements</span><button class="btn bo bsm" onclick="navigate('announcements')">View all</button></div><div class="ct2">
+    ${announcements.map(a=>`<div style="padding:10px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:13px;font-weight:600">${a.title}</span><span class="bx pr">${a.category}</span></div><p style="font-size:12px;color:var(--tm)">${a.content.substring(0,120)}…</p></div>`).join('')}
+  </div></div>`:''}`;
+}
+
+// ─── EMPLOYEES ───
+async function renderEmployees(){
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Employees</h2><p>${employees.length} members in your team</p></div>
+    <button class="btn bp" onclick="openAddEmployee()"><i class="fas fa-plus"></i> Add Employee</button></div>
+  <div class="card"><div class="ch">
+    <div class="flex gap2">
+      <input class="i" style="width:200px" placeholder="Search…" oninput="filterEmpTable(this.value)" id="emp-search">
+      <select class="i" style="width:160px" id="dept-filter" onchange="filterEmpTable(document.getElementById('emp-search').value)"><option value="">All Departments</option>${departments.map(d=>`<option>${d.name}</option>`).join('')}</select>
+    </div>
+    <button class="btn bo bsm" onclick="exportCSV()"><i class="fas fa-download"></i> Export CSV</button>
+  </div>
+  <div class="tw"><table id="emp-table">
+    <thead><tr><th>Employee</th><th>ID</th><th>Department</th><th>Designation</th><th>Joined</th><th>Salary</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${employees.map(empRow).join('')}</tbody>
+  </table></div></div>`;
+}
+
+function empRow(e){
+  return `<tr id="erow-${e.id}">
+    <td><div class="flex gap2"><div class="av32" style="background:${e.avatar_color||'#4F46E5'}">${initials(e.first_name,e.last_name)}</div>
+    <div><div style="font-weight:600">${e.first_name} ${e.last_name}</div><div style="font-size:11px;color:var(--tm)">${e.email}</div></div></div></td>
+    <td><span class="bx gy">${e.employee_code}</span></td>
+    <td>${e.department||'-'}</td>
+    <td>${e.designation||'-'}</td>
+    <td>${e.date_of_joining?fmtDate(e.date_of_joining):'-'}</td>
+    <td>₹${(e.gross_salary||0).toLocaleString('en-IN')}</td>
+    <td><span class="bx ${e.status==='active'?'ok':e.status==='on-leave'?'wa':'er'}">${e.status}</span></td>
+    <td><div class="flex gap2">
+      <button class="btn bo bsm bic" onclick="viewEmp('${e.id}')"><i class="fas fa-eye"></i></button>
+      <button class="btn bo bsm bic" onclick="openEditEmployee('${e.id}')"><i class="fas fa-edit"></i></button>
+    </div></td>
+  </tr>`;
+}
+
+function filterEmpTable(q){
+  const dept=document.getElementById('dept-filter')?.value||'';
+  const rows=document.querySelectorAll('#emp-table tbody tr');
+  rows.forEach(r=>{
+    const txt=r.textContent.toLowerCase();
+    const deptMatch=!dept||r.children[2]?.textContent===dept;
+    r.style.display=(txt.includes(q.toLowerCase())&&deptMatch)?'':'none';
+  });
+}
+
+function openAddEmployee(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Add New Employee</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr"><div><label class="lbl">First Name *</label><input class="i" id="e-fn" placeholder="First name"></div><div><label class="lbl">Last Name *</label><input class="i" id="e-ln" placeholder="Last name"></div></div>
+    <div class="fr"><div><label class="lbl">Email *</label><input class="i" id="e-em" type="email" placeholder="employee@company.com"></div><div><label class="lbl">Phone</label><input class="i" id="e-ph" placeholder="9876543210"></div></div>
+    <div class="fr"><div><label class="lbl">Department</label><select class="i" id="e-dp"><option value="">Select…</option>${departments.map(d=>`<option>${d.name}</option>`).join('')}<option>Other</option></select></div><div><label class="lbl">Designation</label><input class="i" id="e-de" placeholder="e.g. Sales Manager"></div></div>
+    <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="e-dj"></div><div><label class="lbl">Employee Code</label><input class="i" id="e-ec" placeholder="EMP00${employees.length+1}" value="EMP${String(employees.length+1).padStart(3,'0')}"></div></div>
+    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Login Password *</label><input class="i" type="password" id="e-pw" placeholder="Min 8 characters"></div></div>
+    <div style="background:var(--wal);border-radius:8px;padding:11px;font-size:12px;color:#92400E;margin-top:6px"><i class="fas fa-info-circle"></i> A Supabase auth account will be created. The employee will log in using their email + this password.</div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveNewEmployee()">Add Employee</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveNewEmployee(){
+  const fn=v('e-fn'),ln=v('e-ln'),em=v('e-em'),pw=v('e-pw'),ec=v('e-ec'),de=v('e-de'),dp=v('e-dp'),dj=v('e-dj'),sl=v('e-sl'),rl=v('e-rl');
+  if(!fn||!ln||!em||!pw||!ec){toast('Fill in required fields (*)','wa');return;}
+  if(pw.length<8){toast('Password must be at least 8 characters','wa');return;}
+
+  // Create auth user via admin (needs service role in a real setup — here we use signUp)
+  const {data:au,error:ae}=await sb.auth.admin?sb.auth.admin.createUser({email:em,password:pw,email_confirm:true}):{data:null,error:{message:'Use Supabase dashboard to create auth user manually'}};
+  let uid=au?.user?.id;
+
+  if(ae){
+    // Fallback: insert employee without user_id (admin links later)
+    toast('Note: create auth login in Supabase Auth manually for this employee','wa');
+  }
+
+  const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+  const {data:emp,error}=await sb.from('employees').insert({
+    employee_code:ec,first_name:fn,last_name:ln,email:em,phone:v('e-ph'),
+    department:dp,designation:de,date_of_joining:dj||null,gross_salary:parseFloat(sl)||0,
+    role:rl,avatar_color:color,user_id:uid||null
+  }).select().single();
+
+  if(error){toast('Error: '+error.message,'er');return;}
+
+  // Seed default leave balances
+  const balances=[
+    {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:2026},
+    {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:2026},
+    {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:2026},
+    {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:2026},
+    {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:2026},
+  ];
+  await sb.from('leave_balances').insert(balances);
+
+  employees.push(emp);
+  closeMo();
+  toast(`${fn} ${ln} added successfully!`,'ok');
+  renderEmployees();
+}
+
+async function openEditEmployee(id){
+  const e=employees.find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Edit — ${e.first_name} ${e.last_name}</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr"><div><label class="lbl">First Name</label><input class="i" id="ee-fn" value="${e.first_name}"></div><div><label class="lbl">Last Name</label><input class="i" id="ee-ln" value="${e.last_name}"></div></div>
+    <div class="fr"><div><label class="lbl">Email</label><input class="i" id="ee-em" value="${e.email}"></div><div><label class="lbl">Phone</label><input class="i" id="ee-ph" value="${e.phone||''}"></div></div>
+    <div class="fr"><div><label class="lbl">Department</label><select class="i" id="ee-dp"><option value="">Select…</option>${departments.map(d=>`<option ${d.name===e.department?'selected':''}>${d.name}</option>`).join('')}</select></div><div><label class="lbl">Designation</label><input class="i" id="ee-de" value="${e.designation||''}"></div></div>
+    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="ee-sl" value="${e.gross_salary||0}"></div><div><label class="lbl">Status</label><select class="i" id="ee-st"><option value="active" ${e.status==='active'?'selected':''}>Active</option><option value="on-leave" ${e.status==='on-leave'?'selected':''}>On Leave</option><option value="inactive" ${e.status==='inactive'?'selected':''}>Inactive</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Role</label><select class="i" id="ee-rl"><option value="employee" ${e.role==='employee'?'selected':''}>Employee</option><option value="admin" ${e.role==='admin'?'selected':''}>Admin</option></select></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveEditEmployee('${id}')">Save Changes</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveEditEmployee(id){
+  const updates={first_name:v('ee-fn'),last_name:v('ee-ln'),email:v('ee-em'),phone:v('ee-ph'),department:v('ee-dp'),designation:v('ee-de'),gross_salary:parseFloat(v('ee-sl'))||0,status:v('ee-st'),role:v('ee-rl')};
+  const {error}=await sb.from('employees').update(updates).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  const idx=employees.findIndex(x=>x.id===id);
+  if(idx>-1) employees[idx]={...employees[idx],...updates};
+  closeMo();
+  toast('Employee updated!','ok');
+  renderEmployees();
+}
+
+async function viewEmp(id){
+  const e=employees.find(x=>x.id===id);
+  if(!e)return;
+  const {data:leaves}=await sb.from('leave_requests').select('*').eq('employee_id',id).order('created_at',{ascending:false}).limit(5);
+  const {data:att}=await sb.from('attendance').select('*').eq('employee_id',id).order('date',{ascending:false}).limit(7);
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Employee Profile</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--bd)">
+      <div class="av" style="background:${e.avatar_color||'#4F46E5'};width:56px;height:56px;font-size:20px">${initials(e.first_name,e.last_name)}</div>
+      <div><div style="font-size:17px;font-weight:700">${e.first_name} ${e.last_name}</div>
+      <div style="font-size:13px;color:var(--tm)">${e.designation||'-'} · ${e.department||'-'}</div>
+      <span class="bx ${e.status==='active'?'ok':'wa'}" style="margin-top:6px;display:inline-flex">${e.status}</span></div>
+    </div>
+    <div class="g2 mb4">
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Employee Code</div><div style="font-weight:600">${e.employee_code}</div></div>
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Email</div><div style="font-weight:600">${e.email}</div></div>
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Phone</div><div style="font-weight:600">${e.phone||'-'}</div></div>
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Date of Joining</div><div style="font-weight:600">${e.date_of_joining?fmtDate(e.date_of_joining):'-'}</div></div>
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Gross Salary</div><div style="font-weight:600">₹${(e.gross_salary||0).toLocaleString('en-IN')}</div></div>
+      <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;letter-spacing:.4px">Role</div><div style="font-weight:600">${e.role}</div></div>
+    </div>
+    ${att&&att.length?`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Recent Attendance</div>
+    <div class="tw"><table><thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Type</th><th>Status</th></tr></thead><tbody>
+    ${att.map(a=>`<tr><td>${fmtDate(a.date)}</td><td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td><span class="bx ${a.type==='WFH'?'bl':'ok'}">${a.type}</span></td><td><span class="bx ${a.status==='present'?'ok':'er'}">${a.status}</span></td></tr>`).join('')}
+    </tbody></table></div>`:''}
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button><button class="btn bp" onclick="closeMo();openEditEmployee('${id}')">Edit Employee</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+// ─── ATTENDANCE ───
+async function renderAttendance(){
+  const today=new Date().toISOString().split('T')[0];
+  const {data:att}=await sb.from('attendance').select('*,employees(first_name,last_name,avatar_color,department)').order('date',{ascending:false}).limit(60);
+  const {count:presentCount}=await sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('status','present');
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Attendance</h2></div>
+    <button class="btn bp" onclick="openAddAttendance()"><i class="fas fa-plus"></i> Add Record</button></div>
+  <div class="sg">
+    <div class="sc g"><div class="sl">Present Today</div><div class="sv">${presentCount||0}</div><div class="ss">of ${employees.length} employees</div><div class="si"><i class="fas fa-check"></i></div></div>
+    <div class="sc b"><div class="sl">Total Employees</div><div class="sv">${employees.length}</div><div class="ss">Active</div><div class="si"><i class="fas fa-users"></i></div></div>
+    <div class="sc a"><div class="sl">WFH Today</div><div class="sv">—</div><div class="ss">Working remotely</div><div class="si"><i class="fas fa-house-laptop"></i></div></div>
+    <div class="sc r"><div class="sl">Rate</div><div class="sv">${employees.length?Math.round(((presentCount||0)/employees.length)*100)+'%':'0%'}</div><div class="ss">Today's attendance</div><div class="si"><i class="fas fa-chart-pie"></i></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ctitle">Attendance Log</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Type</th><th>Status</th></tr></thead>
+  <tbody>${att&&att.length?att.map(a=>`<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${a.employees?.avatar_color||'#4F46E5'}">${initials(a.employees?.first_name||'?',a.employees?.last_name||'')}</div><span style="font-weight:600">${a.employees?.first_name} ${a.employees?.last_name}</span></div></td>
+    <td>${fmtDate(a.date)}</td>
+    <td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
+    <td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
+    <td>${a.hours_worked?a.hours_worked+'h':'-'}</td>
+    <td><span class="bx ${a.type==='WFH'?'bl':a.type==='Half Day'?'wa':'ok'}">${a.type}</span></td>
+    <td><span class="bx ${a.status==='present'?'ok':'er'}">${a.status}</span></td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No records yet</td></tr>'}</tbody></table></div></div>`;
+}
+
+function openAddAttendance(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Add Attendance Record</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Employee</label><select class="i" id="a-emp"><option value="">Select employee…</option>${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name} (${e.employee_code})</option>`).join('')}</select></div></div>
+    <div class="fr"><div><label class="lbl">Date</label><input class="i" type="date" id="a-dt" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Type</label><select class="i" id="a-tp"><option>Office</option><option>WFH</option><option>Half Day</option></select></div></div>
+    <div class="fr"><div><label class="lbl">Check In</label><input class="i" type="time" id="a-ci" value="09:00"></div><div><label class="lbl">Check Out</label><input class="i" type="time" id="a-co" value="18:00"></div></div>
+    <div class="fr f1"><div><label class="lbl">Status</label><select class="i" id="a-st"><option value="present">Present</option><option value="absent">Absent</option></select></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveAttendance()">Save</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveAttendance(){
+  const empId=v('a-emp'),date=v('a-dt'),type=v('a-tp'),ci=v('a-ci'),co=v('a-co'),status=v('a-st');
+  if(!empId||!date){toast('Select employee and date','wa');return;}
+  const ciTs=ci?`${date}T${ci}:00`:null;
+  const coTs=co?`${date}T${co}:00`:null;
+  const hours=ci&&co?Math.round((new Date(coTs)-new Date(ciTs))/3600000*10)/10:null;
+  const {error}=await sb.from('attendance').upsert({employee_id:empId,date,type,status,check_in:ciTs,check_out:coTs,hours_worked:hours},{onConflict:'employee_id,date'});
+  if(error){toast('Error: '+error.message,'er');return;}
+  closeMo();toast('Attendance recorded!','ok');renderAttendance();
+}
+
+// ─── LEAVES ───
+async function renderLeaves(){
+  const {data:leaves}=await sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,employee_code)').order('created_at',{ascending:false});
+  const pending=leaves?leaves.filter(l=>l.status==='pending').length:0;
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Leave Management</h2></div></div>
+  <div class="sg">
+    <div class="sc a"><div class="sl">Pending</div><div class="sv">${pending}</div><div class="ss">Awaiting review</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
+    <div class="sc g"><div class="sl">Approved</div><div class="sv">${leaves?leaves.filter(l=>l.status==='approved').length:0}</div><div class="ss">This period</div><div class="si"><i class="fas fa-check"></i></div></div>
+    <div class="sc r"><div class="sl">Rejected</div><div class="sv">${leaves?leaves.filter(l=>l.status==='rejected').length:0}</div><div class="ss">This period</div><div class="si"><i class="fas fa-times"></i></div></div>
+    <div class="sc b"><div class="sl">Total Requests</div><div class="sv">${leaves?leaves.length:0}</div><div class="ss">All time</div><div class="si"><i class="fas fa-calendar"></i></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ctitle">All Leave Requests</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+  <tbody id="leave-tbody">${leaves&&leaves.length?leaves.map(l=>`<tr id="lr-${l.id}">
+    <td><div class="flex gap2"><div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${initials(l.employees?.first_name||'?',l.employees?.last_name||'')}</div>
+    <div><div style="font-weight:600">${l.employees?.first_name} ${l.employees?.last_name}</div><div style="font-size:11px;color:var(--tm)">${l.employees?.employee_code}</div></div></div></td>
+    <td><span class="bx bl">${l.leave_type}</span></td>
+    <td>${fmtDate(l.from_date)}</td><td>${fmtDate(l.to_date)}</td><td>${l.days}</td>
+    <td style="max-width:140px;font-size:12px;color:var(--tm)">${l.reason||'-'}</td>
+    <td><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}" id="ls-${l.id}">${l.status}</span></td>
+    <td id="la-${l.id}">${l.status==='pending'?`<div class="flex gap2">
+      <button class="btn bs bsm bic" onclick="actLeave('${l.id}','approved')"><i class="fas fa-check"></i></button>
+      <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected')"><i class="fas fa-times"></i></button>
+    </div>`:'-'}</td>
+  </tr>`).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>`;
+  await updateLeaveBadge();
+}
+
+async function actLeave(id,status){
+  const {error}=await sb.from('leave_requests').update({status,approved_by:me.id,approved_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  // Update UI inline
+  const badge=document.getElementById('ls-'+id);
+  const actions=document.getElementById('la-'+id);
+  if(badge){badge.className=`bx ${status==='approved'?'ok':'er'}`;badge.textContent=status;}
+  if(actions)actions.innerHTML='-';
+  toast(`Leave ${status}!`,status==='approved'?'ok':'');
+  await updateLeaveBadge();
+}
+
+// ─── PAYROLL ───
+async function renderPayroll(){
+  const now=new Date();
+  const {data:payroll}=await sb.from('payroll').select('*,employees(first_name,last_name,avatar_color,employee_code,department)').order('created_at',{ascending:false}).limit(30);
+  const totalGross=employees.reduce((s,e)=>s+(e.gross_salary||0),0);
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Payroll</h2></div>
+    <button class="btn bp" onclick="runPayroll()"><i class="fas fa-paper-plane"></i> Run Payroll</button></div>
+  <div class="sg">
+    <div class="sc b"><div class="sl">Total Payroll</div><div class="sv">₹${(totalGross/1000).toFixed(0)}K</div><div class="ss">Gross per month</div><div class="si"><i class="fas fa-money-bill-wave"></i></div></div>
+    <div class="sc g"><div class="sl">Employees</div><div class="sv">${employees.length}</div><div class="ss">On payroll</div><div class="si"><i class="fas fa-users"></i></div></div>
+    <div class="sc a"><div class="sl">Avg Salary</div><div class="sv">₹${employees.length?Math.round(totalGross/employees.length).toLocaleString('en-IN'):'0'}</div><div class="ss">Per employee</div><div class="si"><i class="fas fa-chart-bar"></i></div></div>
+    <div class="sc r"><div class="sl">PF Liability</div><div class="sv">₹${Math.round(totalGross*0.12/1000)}K</div><div class="ss">Employer PF</div><div class="si"><i class="fas fa-piggy-bank"></i></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ctitle">Employee Salary Structure</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Department</th><th>Gross</th><th>PF (12%)</th><th>TDS</th><th>Prof Tax</th><th>Net Pay</th><th>Action</th></tr></thead>
+  <tbody>${employees.map(e=>{
+    const pf=Math.round(e.gross_salary*0.12);
+    const net=e.gross_salary-pf-(e.tax_amount||0)-200;
+    return `<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${e.avatar_color||'#4F46E5'}">${initials(e.first_name,e.last_name)}</div><div><div style="font-weight:600">${e.first_name} ${e.last_name}</div><div style="font-size:11px;color:var(--tm)">${e.employee_code}</div></div></div></td>
+    <td>${e.department||'-'}</td>
+    <td>₹${(e.gross_salary||0).toLocaleString('en-IN')}</td>
+    <td>₹${pf.toLocaleString('en-IN')}</td>
+    <td>₹${(e.tax_amount||0).toLocaleString('en-IN')}</td>
+    <td>₹200</td>
+    <td style="font-weight:700;color:var(--ok)">₹${net.toLocaleString('en-IN')}</td>
+    <td><button class="btn bo bsm" onclick="viewPayslip('${e.id}')"><i class="fas fa-file-invoice-dollar"></i> Payslip</button></td>
+  </tr>`;}).join('')}</tbody></table></div></div>`;
+}
+
+async function runPayroll(){
+  const now=new Date();
+  const month=now.getMonth()+1,year=now.getFullYear();
+  const rows=employees.map(e=>({employee_id:e.id,month,year,gross_salary:e.gross_salary||0,tax_deduction:e.tax_amount||0,status:'processed',processed_at:now.toISOString()}));
+  const {error}=await sb.from('payroll').upsert(rows,{onConflict:'employee_id,month,year'});
+  if(error){toast('Error: '+error.message,'er');return;}
+  toast(`Payroll processed for ${now.toLocaleString('default',{month:'long'})} ${year}!`,'ok');
+}
+
+function viewPayslip(empId){
+  const e=employees.find(x=>x.id===empId);if(!e)return;
+  const pf=Math.round(e.gross_salary*0.12);
+  const tax=e.tax_amount||0;
+  const net=e.gross_salary-pf-tax-200;
+  const now=new Date();
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Payslip — ${now.toLocaleString('default',{month:'long',year:'numeric'})}</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+      <div><div style="font-size:17px;font-weight:700;color:var(--p)">PeopleCore</div><div style="font-size:12px;color:var(--tm)">Payslip</div></div>
+      <span class="bx ok">Processed</span>
+    </div>
+    <div class="g2 mb4" style="grid-template-columns:1fr 1fr">
+      <div><div class="lbl" style="margin-bottom:2px">Employee</div><div style="font-weight:600">${e.first_name} ${e.last_name}</div></div>
+      <div><div class="lbl" style="margin-bottom:2px">Employee Code</div><div style="font-weight:600">${e.employee_code}</div></div>
+      <div><div class="lbl" style="margin-bottom:2px">Department</div><div style="font-weight:600">${e.department||'-'}</div></div>
+      <div><div class="lbl" style="margin-bottom:2px">Designation</div><div style="font-weight:600">${e.designation||'-'}</div></div>
+    </div>
+    <div class="g2" style="grid-template-columns:1fr 1fr">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--ok);margin-bottom:10px">Earnings</div>
+        <div class="payslip-row"><span>Basic (50%)</span><span>₹${Math.round(e.gross_salary*0.5).toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row"><span>HRA (20%)</span><span>₹${Math.round(e.gross_salary*0.2).toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row"><span>Special Allowance</span><span>₹${Math.round(e.gross_salary*0.2).toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row"><span>Transport</span><span>₹${Math.round(e.gross_salary*0.1).toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row" style="font-weight:700"><span>Gross Pay</span><span>₹${(e.gross_salary||0).toLocaleString('en-IN')}</span></div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--er);margin-bottom:10px">Deductions</div>
+        <div class="payslip-row"><span>PF (12%)</span><span>₹${pf.toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row"><span>TDS</span><span>₹${tax.toLocaleString('en-IN')}</span></div>
+        <div class="payslip-row"><span>Professional Tax</span><span>₹200</span></div>
+        <div class="payslip-row" style="font-weight:700"><span>Total Deductions</span><span>₹${(pf+tax+200).toLocaleString('en-IN')}</span></div>
+      </div>
+    </div>
+    <div style="background:var(--p);color:white;border-radius:9px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:600">Net Pay</span>
+      <span style="font-size:20px;font-weight:700">₹${net.toLocaleString('en-IN')}</span>
+    </div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+// ─── INCENTIVES ───
+async function renderIncentives(){
+  const {data:inc}=await sb.from('incentives').select('*,employees(first_name,last_name,avatar_color)').order('created_at',{ascending:false});
+  const total=inc?inc.reduce((s,i)=>s+i.amount,0):0;
+  const paid=inc?inc.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0):0;
+  const pending=inc?inc.filter(i=>i.status!=='paid').reduce((s,i)=>s+i.amount,0):0;
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Bonuses & Incentives</h2></div>
+    <button class="btn bp" onclick="openAddIncentive()"><i class="fas fa-plus"></i> Add Incentive</button></div>
+  <div class="sg">
+    <div class="sc b"><div class="sl">Total</div><div class="sv">₹${(total/1000).toFixed(0)}K</div><div class="ss">All incentives</div><div class="si"><i class="fas fa-award"></i></div></div>
+    <div class="sc g"><div class="sl">Paid</div><div class="sv">₹${(paid/1000).toFixed(0)}K</div><div class="ss">Disbursed</div><div class="si"><i class="fas fa-check"></i></div></div>
+    <div class="sc a"><div class="sl">Pending</div><div class="sv">₹${(pending/1000).toFixed(0)}K</div><div class="ss">Awaiting</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
+    <div class="sc r"><div class="sl">Recipients</div><div class="sv">${inc?new Set(inc.map(i=>i.employee_id)).size:0}</div><div class="ss">Employees</div><div class="si"><i class="fas fa-users"></i></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ctitle">Incentive Records</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Amount</th><th>Period</th><th>Notes</th><th>Status</th><th>Action</th></tr></thead>
+  <tbody>${inc&&inc.length?inc.map(i=>`<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${i.employees?.avatar_color||'#4F46E5'}">${initials(i.employees?.first_name||'?',i.employees?.last_name||'')}</div><span style="font-weight:600">${i.employees?.first_name} ${i.employees?.last_name}</span></div></td>
+    <td><span class="bx pu">${i.type}</span></td>
+    <td style="font-weight:700;color:var(--ok)">₹${i.amount.toLocaleString('en-IN')}</td>
+    <td>${i.period||'-'}</td>
+    <td style="font-size:12px;color:var(--tm);max-width:120px">${i.notes||'-'}</td>
+    <td><span class="bx ${i.status==='paid'?'ok':i.status==='approved'?'bl':'wa'}" id="is-${i.id}">${i.status}</span></td>
+    <td>${i.status!=='paid'?`<button class="btn bs bsm" onclick="approveIncentive('${i.id}')">Approve & Pay</button>`:'-'}</td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No incentives yet</td></tr>'}</tbody></table></div></div>`;
+}
+
+function openAddIncentive(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Add Bonus / Incentive</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Employee</label><select class="i" id="in-emp"><option value="">Select…</option>${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name}</option>`).join('')}</select></div></div>
+    <div class="fr"><div><label class="lbl">Type</label><select class="i" id="in-tp"><option>Performance Bonus</option><option>Spot Award</option><option>Target Achievement</option><option>Referral Bonus</option><option>Annual Bonus</option><option>Festival Bonus</option><option>Other</option></select></div><div><label class="lbl">Amount (₹)</label><input class="i" type="number" id="in-am" placeholder="10000"></div></div>
+    <div class="fr"><div><label class="lbl">Period</label><input class="i" id="in-pd" placeholder="e.g. June 2026"></div><div><label class="lbl">Status</label><select class="i" id="in-st"><option value="pending">Pending</option><option value="approved">Approved</option><option value="paid">Paid</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Notes</label><textarea class="i" id="in-nt" placeholder="Reason for incentive…"></textarea></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveIncentive()">Save</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveIncentive(){
+  const empId=v('in-emp'),amount=parseFloat(v('in-am'));
+  if(!empId||!amount){toast('Select employee and amount','wa');return;}
+  const {error}=await sb.from('incentives').insert({employee_id:empId,type:v('in-tp'),amount,period:v('in-pd'),notes:v('in-nt'),status:v('in-st'),approved_by:me.id});
+  if(error){toast('Error: '+error.message,'er');return;}
+  closeMo();toast('Incentive added!','ok');renderIncentives();
+}
+
+async function approveIncentive(id){
+  await sb.from('incentives').update({status:'paid'}).eq('id',id);
+  document.getElementById('is-'+id).className='bx ok';
+  document.getElementById('is-'+id).textContent='paid';
+  toast('Marked as paid!','ok');
+}
+
+// ─── HOLIDAYS ───
+async function renderHolidays(){
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Holiday Calendar 2026</h2></div>
+    <button class="btn bp" onclick="openAddHoliday()"><i class="fas fa-plus"></i> Add Holiday</button></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ctitle">June 2026</span></div><div class="ct2">${buildCal(2026,5)}</div></div>
+    <div class="card"><div class="ch"><span class="ctitle">All Holidays</span></div>
+    <div class="ct2" id="hol-list">${holidays.map(h=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)">
+      <div style="text-align:center;min-width:42px;background:var(--pl);border-radius:7px;padding:4px">
+        <div style="font-size:15px;font-weight:700;color:var(--p)">${new Date(h.date+'T00:00:00').getDate()}</div>
+        <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
+      </div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
+      <button class="btn bd2 bsm bic" onclick="deleteHoliday('${h.id}')"><i class="fas fa-trash"></i></button>
+    </div>`).join('')}
+    </div></div>
+  </div>`;
+}
+
+function openAddHoliday(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Add Holiday</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr"><div><label class="lbl">Name</label><input class="i" id="h-nm" placeholder="e.g. Diwali"></div><div><label class="lbl">Date</label><input class="i" type="date" id="h-dt"></div></div>
+    <div class="fr f1"><div><label class="lbl">Type</label><select class="i" id="h-tp"><option>National</option><option>Festival</option><option>Optional</option><option>Company</option></select></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveHoliday()">Add</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveHoliday(){
+  const name=v('h-nm'),date=v('h-dt'),type=v('h-tp');
+  if(!name||!date){toast('Fill name and date','wa');return;}
+  const {data,error}=await sb.from('holidays').insert({name,date,type}).select().single();
+  if(error){toast('Error: '+error.message,'er');return;}
+  holidays.push(data);closeMo();toast('Holiday added!','ok');renderHolidays();
+}
+
+async function deleteHoliday(id){
+  await sb.from('holidays').delete().eq('id',id);
+  holidays=holidays.filter(h=>h.id!==id);
+  toast('Holiday removed','');renderHolidays();
+}
+
+// ─── DEPARTMENTS ───
+async function renderDepartments(){
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Departments</h2></div>
+    <button class="btn bp" onclick="openAddDept()"><i class="fas fa-plus"></i> Add Department</button></div>
+  <div class="g3">
+    ${departments.map(d=>{
+      const count=employees.filter(e=>e.department===d.name).length;
+      const color=COLORS[departments.indexOf(d)%COLORS.length];
+      return `<div class="card" style="border-top:3px solid ${color}"><div class="ct2">
+        <div style="width:40px;height:40px;border-radius:9px;background:${color}18;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><i class="fas fa-sitemap" style="color:${color}"></i></div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:3px">${d.name}</div>
+        ${d.head_name?`<div style="font-size:12px;color:var(--tm);margin-bottom:10px">Head: ${d.head_name}</div>`:'<div style="margin-bottom:10px"></div>'}
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="bx gy">${count} member${count!==1?'s':''}</span>
+          <button class="btn bo bsm" onclick="editDept('${d.id}','${d.name}','${d.head_name||''}')">Edit</button>
+        </div>
+      </div></div>`;
+    }).join('')}
+    <div class="card" style="border:2px dashed var(--bd);cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:140px" onclick="openAddDept()">
+      <div style="text-align:center;color:var(--tm)"><i class="fas fa-plus" style="font-size:24px;margin-bottom:8px;display:block;opacity:.5"></i><div style="font-size:13px">Add Department</div></div>
+    </div>
+  </div>`;
+}
+
+function openAddDept(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Add Department</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Department Name</label><input class="i" id="d-nm" placeholder="e.g. Sales"></div></div>
+    <div class="fr f1"><div><label class="lbl">Department Head</label><input class="i" id="d-hd" placeholder="Head's name"></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveDept()">Add</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveDept(){
+  const name=v('d-nm'),head=v('d-hd');
+  if(!name){toast('Enter department name','wa');return;}
+  const {data,error}=await sb.from('departments').insert({name,head_name:head}).select().single();
+  if(error){toast(error.code==='23505'?'Department already exists':'Error: '+error.message,'er');return;}
+  departments.push(data);closeMo();toast('Department added!','ok');renderDepartments();
+}
+
+async function editDept(id,name,head){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Edit Department</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Department Name</label><input class="i" id="d-nm" value="${name}"></div></div>
+    <div class="fr f1"><div><label class="lbl">Department Head</label><input class="i" id="d-hd" value="${head}"></div></div>
+  </div>
+  <div class="mf">
+    <button class="btn bd2" onclick="deleteDept('${id}')">Delete</button>
+    <button class="btn bo" onclick="closeMo()">Cancel</button>
+    <button class="btn bp" onclick="updateDept('${id}')">Save</button>
+  </div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function updateDept(id){
+  const {error}=await sb.from('departments').update({name:v('d-nm'),head_name:v('d-hd')}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  await loadDepartments();closeMo();toast('Updated!','ok');renderDepartments();
+}
+
+async function deleteDept(id){
+  await sb.from('departments').delete().eq('id',id);
+  departments=departments.filter(d=>d.id!==id);closeMo();toast('Deleted','');renderDepartments();
+}
+
+// ─── WELLBEING ───
+async function renderWellbeing(){
+  const {data:surveys}=await sb.from('wellbeing_surveys').select('*,employees(first_name,last_name,avatar_color)').order('created_at',{ascending:false});
+  const avg=surveys&&surveys.length?Math.round(surveys.reduce((s,x)=>s+(x.overall_score||0),0)/surveys.length):0;
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Employee Wellbeing</h2></div></div>
+  <div class="sg">
+    <div class="sc g"><div class="sl">Avg Score</div><div class="sv">${avg}/100</div><div class="ss">Team wellbeing</div><div class="si"><i class="fas fa-heart"></i></div></div>
+    <div class="sc b"><div class="sl">Responses</div><div class="sv">${surveys?surveys.length:0}</div><div class="ss">This period</div><div class="si"><i class="fas fa-clipboard-list"></i></div></div>
+    <div class="sc a"><div class="sl">Pending</div><div class="sv">${Math.max(0,employees.length-(surveys?surveys.length:0))}</div><div class="ss">No response yet</div><div class="si"><i class="fas fa-question"></i></div></div>
+    <div class="sc r"><div class="sl">High Stress</div><div class="sv">${surveys?surveys.filter(s=>s.workload_score&&s.workload_score<=2).length:0}</div><div class="ss">Need attention</div><div class="si"><i class="fas fa-triangle-exclamation"></i></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ctitle">Survey Responses</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Score</th><th>Mood</th><th>Workload</th><th>Team</th><th>Balance</th><th>Motivation</th><th>Month</th></tr></thead>
+  <tbody>${surveys&&surveys.length?surveys.map(s=>{
+    const score=s.overall_score||0;
+    return `<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${s.employees?.avatar_color||'#4F46E5'}">${initials(s.employees?.first_name||'?',s.employees?.last_name||'')}</div><span style="font-weight:600">${s.employees?.first_name} ${s.employees?.last_name}</span></div></td>
+    <td><div class="flex gap2"><div class="prog" style="width:70px"><div class="pb" style="width:${score}%;background:${score>=70?'var(--ok)':score>=40?'var(--wa)':'var(--er)'}"></div></div><span style="font-weight:600">${score}</span></div></td>
+    <td>${starRating(s.mood_score)}</td><td>${starRating(s.workload_score)}</td><td>${starRating(s.team_score)}</td><td>${starRating(s.balance_score)}</td><td>${starRating(s.motivation_score)}</td>
+    <td>${s.month}/${s.year}</td>
+  </tr>`;}).join(''):'<tr><td colspan="8" class="empty">No survey responses yet</td></tr>'}</tbody></table></div></div>`;
+}
+
+// ─── ANNOUNCEMENTS ───
+async function renderAnnouncements(){
+  const {data:ann}=await sb.from('announcements').select('*').order('created_at',{ascending:false});
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Announcements</h2></div>
+    <button class="btn bp" onclick="openAddAnn()"><i class="fas fa-plus"></i> Post Announcement</button></div>
+  ${ann&&ann.length?ann.map(a=>`
+  <div class="card mb4">
+    <div class="ct2">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div><span class="bx pr" style="margin-bottom:6px;display:inline-flex">${a.category}</span><div style="font-size:14px;font-weight:700">${a.title}</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="font-size:11px;color:var(--tl)">${fmtDate(a.created_at.split('T')[0])}</div>
+          <button class="btn bd2 bsm bic" onclick="deleteAnn('${a.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <p style="color:var(--tm);font-size:13px;line-height:1.6">${a.content}</p>
+    </div>
+  </div>`).join(''):'<div class="empty"><i class="fas fa-bullhorn"></i><div>No announcements yet</div></div>'}`;
+}
+
+function openAddAnn(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Post Announcement</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Title</label><input class="i" id="an-ti" placeholder="Announcement title"></div></div>
+    <div class="fr f1"><div><label class="lbl">Category</label><select class="i" id="an-ca"><option>HR</option><option>Notice</option><option>Benefits</option><option>Event</option><option>Policy</option><option>General</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Content</label><textarea class="i" id="an-ct" style="min-height:120px" placeholder="Write announcement…"></textarea></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="saveAnn()">Post</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveAnn(){
+  const title=v('an-ti'),content=v('an-ct'),category=v('an-ca');
+  if(!title||!content){toast('Fill title and content','wa');return;}
+  const {error}=await sb.from('announcements').insert({title,content,category,author_id:me.id});
+  if(error){toast('Error: '+error.message,'er');return;}
+  closeMo();toast('Announcement posted!','ok');renderAnnouncements();
+}
+
+async function deleteAnn(id){
+  await sb.from('announcements').delete().eq('id',id);
+  toast('Deleted','');renderAnnouncements();
+}
+
+// ─── REPORTS ───
+async function renderReports(){
+  const deptCounts=departments.map(d=>({name:d.name,count:employees.filter(e=>e.department===d.name).length}));
+  const totalSalary=employees.reduce((s,e)=>s+(e.gross_salary||0),0);
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Reports & Analytics</h2></div></div>
+  <div class="sg">
+    <div class="sc b"><div class="sl">Total Headcount</div><div class="sv">${employees.length}</div><div class="ss">Active employees</div><div class="si"><i class="fas fa-users"></i></div></div>
+    <div class="sc g"><div class="sl">Monthly Payroll</div><div class="sv">₹${(totalSalary/1000).toFixed(0)}K</div><div class="ss">Gross total</div><div class="si"><i class="fas fa-money-bill-wave"></i></div></div>
+    <div class="sc a"><div class="sl">Departments</div><div class="sv">${departments.length}</div><div class="ss">Teams</div><div class="si"><i class="fas fa-sitemap"></i></div></div>
+    <div class="sc r"><div class="sl">Avg Salary</div><div class="sv">₹${employees.length?Math.round(totalSalary/employees.length).toLocaleString('en-IN'):'0'}</div><div class="ss">Per employee</div><div class="si"><i class="fas fa-chart-bar"></i></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ctitle">Headcount by Department</span></div><div class="ct2">
+      ${deptCounts.filter(d=>d.count>0).map(d=>`
+      <div class="lb"><div class="lbh"><strong>${d.name}</strong><span>${d.count} employee${d.count!==1?'s':''}</span></div>
+      <div class="prog"><div class="pb" style="width:${Math.max(5,(d.count/employees.length)*100)}%;background:var(--p)"></div></div></div>`).join('')||'<div class="empty">No data</div>'}
+    </div></div>
+    <div class="card"><div class="ch"><span class="ctitle">Download Reports</span></div><div class="ct2">
+      ${[
+        {icon:'fas fa-users',label:'Employee Directory',color:'#4F46E5'},
+        {icon:'fas fa-fingerprint',label:'Attendance Report',color:'#059669'},
+        {icon:'fas fa-umbrella-beach',label:'Leave Summary',color:'#D97706'},
+        {icon:'fas fa-money-bill',label:'Payroll Report',color:'#7C3AED'},
+        {icon:'fas fa-award',label:'Incentives Report',color:'#DC2626'},
+        {icon:'fas fa-heart-pulse',label:'Wellbeing Report',color:'#0891B2'},
+      ].map(r=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd)">
+        <div class="flex gap2"><i class="${r.icon}" style="color:${r.color};width:18px"></i><span style="font-size:13px">${r.label}</span></div>
+        <button class="btn bo bsm" onclick="exportReport('${r.label}')"><i class="fas fa-download"></i></button>
+      </div>`).join('')}
+    </div></div>
+  </div>`;
+}
+
+async function exportReport(label){
+  let csv='',filename=label.replace(/\s+/g,'_').toLowerCase()+'.csv';
+  if(label==='Employee Directory'){
+    csv='Code,Name,Email,Department,Designation,Joined,Salary,Status\n';
+    csv+=employees.map(e=>`${e.employee_code},${e.first_name} ${e.last_name},${e.email},${e.department||''},${e.designation||''},${e.date_of_joining||''},${e.gross_salary||0},${e.status}`).join('\n');
+  } else {
+    csv=`${label}\nGenerated: ${new Date().toLocaleString('en-IN')}`;
+  }
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  toast(`${label} downloaded!`,'ok');
+}
+
+function exportCSV(){
+  let csv='Code,Name,Email,Department,Designation,Phone,Date of Joining,Gross Salary,Status\n';
+  csv+=employees.map(e=>`${e.employee_code},"${e.first_name} ${e.last_name}",${e.email},${e.department||''},${e.designation||''},${e.phone||''},${e.date_of_joining||''},${e.gross_salary||0},${e.status}`).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='employees.csv';a.click();
+  toast('CSV exported!','ok');
+}
+
+// ─── SEARCH ───
+function searchEmployees(q){
+  if(!q)return;
+  navigate('employees');
+  setTimeout(()=>{
+    const inp=document.getElementById('emp-search');
+    if(inp){inp.value=q;filterEmpTable(q);}
+  },300);
+}
+
+// ─── HELPERS ───
+function buildCal(year,month){
+  const hDates=holidays.filter(h=>{const d=new Date(h.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;}).map(h=>new Date(h.date+'T00:00:00').getDate());
+  const first=new Date(year,month,1).getDay();
+  const days=new Date(year,month+1,0).getDate();
+  const today=new Date();
+  let html=`<div class="cal-grid">`;
+  ['S','M','T','W','T','F','S'].forEach(d=>html+=`<div class="cdh">${d}</div>`);
+  for(let i=0;i<first;i++)html+=`<div class="cd"></div>`;
+  for(let d=1;d<=days;d++){
+    const isToday=today.getDate()===d&&today.getMonth()===month&&today.getFullYear()===year;
+    const isHol=hDates.includes(d);
+    const dow=new Date(year,month,d).getDay();
+    const isWknd=dow===0||dow===6;
+    html+=`<div class="cd${isToday?' today':isHol?' hol':isWknd?' wkd':''}" title="${isHol?holidays.find(h=>new Date(h.date+'T00:00:00').getDate()===d&&new Date(h.date+'T00:00:00').getMonth()===month)?.name:''}">${d}</div>`;
+  }
+  return html+'</div>';
+}
+
+function starRating(n){if(!n)return'<span style="color:var(--tl)">—</span>';return'★'.repeat(n)+'☆'.repeat(5-n);}
+function initials(fn,ln){return((fn||'?')[0]+(ln||'')[0]).toUpperCase();}
+function fmtDate(d){if(!d)return'-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function closeMo(){document.getElementById('mo').classList.remove('op');}
+let toastT;
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=`show${type?' '+type:''}`;clearTimeout(toastT);toastT=setTimeout(()=>t.className='',3200);}
+async function logout(){await sb.auth.signOut();location.href='index.html';}
+
+init();
+</script>
+</body>
+</html>
