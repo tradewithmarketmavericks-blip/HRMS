@@ -98,6 +98,21 @@ async function login(){
   if(tab==='admin' && emp.role!=='admin'){ showErr('This account does not have admin access.'); await sb.auth.signOut(); btn.disabled=false; document.getElementById('btn-text').textContent='Sign in'; return; }
 
   window.location.href = emp.role==='admin' ? 'admin.html' : 'employee.html';
+}const hashParams = new URLSearchParams(window.location.hash.substring(1));
+const accessToken = hashParams.get('access_token');
+const type = hashParams.get('type');
+
+if (accessToken && type === 'recovery') {
+  const newPass = prompt('Enter your new password (min 8 characters):');
+  if (newPass && newPass.length >= 8) {
+    const { error } = await sb.auth.updateUser({ password: newPass });
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      alert('Password updated successfully! Please log in.');
+      window.location.hash = '';
+    }
+  }
 }
 </script>
 </body>
