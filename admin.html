@@ -199,6 +199,8 @@ textarea.i{resize:vertical;min-height:76px}
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+// Secondary client used only for signUp — prevents admin session being replaced
+const sbReg=createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 let me=null,employees=[],departments=[],holidays=[],calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 const COLORS=['#4F46E5','#7C3AED','#059669','#DC2626','#D97706','#0891B2','#0F766E','#9333EA','#BE185D'];
 const STATUS_COLORS={active:'ok','on-leave':'wa',inactive:'gy',resigned:'er',terminated:'er',absconded:'pk',probation:'cy'};
@@ -355,30 +357,46 @@ async function saveNewEmployee(){
   const fn=v('e-fn'),ln=v('e-ln'),em=v('e-em'),pw=v('e-pw'),ec=v('e-ec');
   if(!fn||!ln||!em||!ec){toast('Fill all required fields (*)','wa');return;}
   if(!pw||pw.length<8){toast('Password must be at least 8 characters','wa');return;}
-  setBtnLoad('save-emp-btn',true,'Creating account…');
+  setBtnLoad('save-emp-btn',true,'Creating login…');
   const color=COLORS[Math.floor(Math.random()*COLORS.length)];
-  // Use the secure DB function that creates auth user + employee + leave balances in one go
-  const {data,error}=await sb.rpc('create_employee_with_auth',{
-    p_email:em,
-    p_password:pw,
-    p_first_name:fn,
-    p_last_name:ln,
-    p_employee_code:ec,
-    p_phone:v('e-ph')||null,
-    p_department:v('e-dp')||null,
-    p_designation:v('e-de')||null,
-    p_date_of_joining:v('e-dj')||null,
-    p_gross_salary:parseFloat(v('e-sl'))||0,
-    p_tax_amount:parseFloat(v('e-tx'))||0,
-    p_role:v('e-rl'),
-    p_status:v('e-st'),
-    p_avatar_color:color
+
+  // Step 1: Create auth user via secondary client so admin session is NOT replaced
+  const {data:authData,error:authErr}=await sbReg.auth.signUp({
+    email:em,
+    password:pw,
+    options:{data:{first_name:fn,last_name:ln}}
   });
-  if(error){toast('Error: '+error.message,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
-  if(data&&data.success===false){toast('Error: '+data.error,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+  if(authErr){toast('Auth error: '+authErr.message,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+  const userId=authData?.user?.id;
+  if(!userId){toast('Failed to create login account. Try again.','er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+
+  // Step 2: Insert employee record linked to auth user
+  setBtnLoad('save-emp-btn',true,'Saving employee…');
+  const {data:emp,error:empErr}=await sb.from('employees').insert({
+    user_id:userId,
+    employee_code:ec,first_name:fn,last_name:ln,email:em,
+    phone:v('e-ph')||null,department:v('e-dp')||null,
+    designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
+    gross_salary:parseFloat(v('e-sl'))||0,
+    tax_amount:parseFloat(v('e-tx'))||0,
+    role:v('e-rl'),status:v('e-st'),avatar_color:color
+  }).select().single();
+
+  if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+
+  // Step 3: Seed leave balances
+  const yr=new Date().getFullYear();
+  await sb.from('leave_balances').insert([
+    {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
+    {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:yr},
+    {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:yr},
+    {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
+    {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
+  ]);
+
   await loadEmployees();
   closeMo();
-  toast(`${fn} ${ln} added! They can now log in immediately.`,'ok');
+  toast(`${fn} ${ln} added! They can log in immediately with their email and password.`,'ok');
   renderEmployees();
 }
 
