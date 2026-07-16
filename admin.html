@@ -341,10 +341,10 @@ function openAddEmployee(){
     <div class="fr"><div><label class="lbl">Email *</label><input class="i" id="e-em" type="email" placeholder="employee@company.com"></div><div><label class="lbl">Phone</label><input class="i" id="e-ph" placeholder="9876543210"></div></div>
     <div class="fr"><div><label class="lbl">Department</label><select class="i" id="e-dp"><option value="">Select…</option>${departments.map(d=>`<option>${d.name}</option>`).join('')}</select></div><div><label class="lbl">Designation</label><input class="i" id="e-de" placeholder="e.g. Sales Manager"></div></div>
     <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="e-dj" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Employee Code</label><input class="i" id="e-ec" value="EMP${String(employees.length+1).padStart(3,'0')}"></div></div>
-    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div></div>
-    <div class="fr"><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div><div><label class="lbl">Tax Deduction (₹/month)</label><input class="i" type="number" id="e-tx" placeholder="0"></div></div>
+    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Tax Deduction (₹/month)</label><input class="i" type="number" id="e-tx" placeholder="0"></div></div>
+    <div class="fr"><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div></div>
     <div class="fr f1"><div><label class="lbl">Login Password * (min 8 chars)</label><div class="pw-wrap"><input class="i" type="password" id="e-pw" placeholder="Employee will use this to log in"><span class="pw-eye" onclick="tpw('e-pw',this)">👁</span></div></div></div>
-    <div class="info-box"><i class="fas fa-info-circle"></i> After saving, you must also create this employee's auth account in <strong>Supabase → Authentication → Users</strong> using the same email and password, then link their UID via SQL. See README for details.</div>
+    <div style="background:var(--okl);color:#065F46;border-radius:8px;padding:11px;font-size:12px;margin-top:6px"><i class="fas fa-check-circle"></i> The employee's login account will be created automatically. They can log in immediately using this email and password.</div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-emp-btn" onclick="saveNewEmployee()"><i class="fas fa-save"></i> Add Employee</button></div>`;
   document.getElementById('mo').classList.add('op');
@@ -353,26 +353,31 @@ function openAddEmployee(){
 async function saveNewEmployee(){
   const fn=v('e-fn'),ln=v('e-ln'),em=v('e-em'),pw=v('e-pw'),ec=v('e-ec');
   if(!fn||!ln||!em||!ec){toast('Fill all required fields (*)','wa');return;}
-  if(pw&&pw.length<8){toast('Password must be at least 8 characters','wa');return;}
-  setBtnLoad('save-emp-btn',true,'Saving…');
+  if(!pw||pw.length<8){toast('Password must be at least 8 characters','wa');return;}
+  setBtnLoad('save-emp-btn',true,'Creating account…');
   const color=COLORS[Math.floor(Math.random()*COLORS.length)];
-  const {data:emp,error}=await sb.from('employees').insert({
-    employee_code:ec,first_name:fn,last_name:ln,email:em,phone:v('e-ph'),
-    department:v('e-dp'),designation:v('e-de'),date_of_joining:v('e-dj')||null,
-    gross_salary:parseFloat(v('e-sl'))||0,role:v('e-rl'),status:v('e-st'),
-    tax_amount:parseFloat(v('e-tx'))||0,avatar_color:color
-  }).select().single();
-  if(error){toast('Error: '+(error.code==='23505'?'Employee code or email already exists.':error.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
-  // Seed leave balances
-  await sb.from('leave_balances').insert([
-    {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:new Date().getFullYear()},
-    {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:new Date().getFullYear()},
-    {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:new Date().getFullYear()},
-    {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:new Date().getFullYear()},
-    {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:new Date().getFullYear()},
-  ]);
-  employees.push(emp);
-  closeMo();toast(`${fn} ${ln} added! Remember to create their Supabase auth account.`,'ok');
+  // Use the secure DB function that creates auth user + employee + leave balances in one go
+  const {data,error}=await sb.rpc('create_employee_with_auth',{
+    p_email:em,
+    p_password:pw,
+    p_first_name:fn,
+    p_last_name:ln,
+    p_employee_code:ec,
+    p_phone:v('e-ph')||null,
+    p_department:v('e-dp')||null,
+    p_designation:v('e-de')||null,
+    p_date_of_joining:v('e-dj')||null,
+    p_gross_salary:parseFloat(v('e-sl'))||0,
+    p_tax_amount:parseFloat(v('e-tx'))||0,
+    p_role:v('e-rl'),
+    p_status:v('e-st'),
+    p_avatar_color:color
+  });
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+  if(data&&data.success===false){toast('Error: '+data.error,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+  await loadEmployees();
+  closeMo();
+  toast(`${fn} ${ln} added! They can now log in immediately.`,'ok');
   renderEmployees();
 }
 
