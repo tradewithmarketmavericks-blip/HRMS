@@ -451,19 +451,11 @@ async function viewEmp(id){
 
 function confirmDelete(id,name){
   confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their records. This cannot be undone.`,async()=>{
-    // Delete child records first to avoid foreign key constraint errors
-    await sb.from('attendance').delete().eq('employee_id',id);
-    await sb.from('leave_requests').delete().eq('employee_id',id);
-    await sb.from('leave_balances').delete().eq('employee_id',id);
-    await sb.from('payroll').delete().eq('employee_id',id);
-    await sb.from('incentives').delete().eq('employee_id',id);
-    await sb.from('wellbeing_surveys').delete().eq('employee_id',id);
-    await sb.from('documents').delete().eq('employee_id',id);
-    // Now delete the employee record
-    const {error}=await sb.from('employees').delete().eq('id',id);
+    const {error}=await sb.rpc('delete_employee_cascade',{emp_id:id});
     if(error){toast('Error: '+error.message,'er');return;}
     employees=employees.filter(e=>e.id!==id);
-    toast(`${name} deleted successfully.`,'ok');renderEmployees();
+    toast(`${name} deleted successfully.`,'ok');
+    renderEmployees();
   },'Delete','bd2');
 }
 
