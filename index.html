@@ -6,29 +6,40 @@
 <title>PeopleCore HRMS — Login</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1E1B4B 0%,#312E81 50%,#4F46E5 100%)}
-  .card{background:white;border-radius:18px;padding:48px 40px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.3)}
-  .logo{text-align:center;margin-bottom:32px}
-  .logo-icon{width:58px;height:58px;background:#4F46E5;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
-  .logo-icon svg{fill:white;width:28px;height:28px}
-  h1{font-size:22px;font-weight:700;color:#1E293B}
-  .sub{font-size:13px;color:#64748B;margin-top:3px}
-  .tabs{display:flex;background:#F8FAFC;border-radius:10px;padding:4px;gap:4px;margin-bottom:26px}
-  .tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:#64748B;border:none;background:none;transition:all .2s}
-  .tab.active{background:white;color:#4F46E5;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-  .fg{margin-bottom:17px}
-  label{display:block;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-  input{width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:14px;color:#1E293B;outline:none;transition:border-color .2s}
-  input:focus{border-color:#4F46E5}
-  .btn{width:100%;padding:13px;background:#4F46E5;color:white;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-  .btn:hover{background:#3730A3}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
-  .err{background:#FEE2E2;color:#991B1B;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
-  .hint{text-align:center;font-size:12px;color:#94A3B8;margin-top:16px;line-height:1.6}
-  #config-banner{background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:14px;margin-bottom:20px;font-size:12px;color:#92400E;display:none}
-  #config-banner strong{display:block;margin-bottom:4px}
-  #config-banner a{color:#4F46E5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1E1B4B 0%,#312E81 50%,#4F46E5 100%)}
+.card{background:white;border-radius:18px;padding:44px 38px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.3)}
+.logo{text-align:center;margin-bottom:28px}
+.logo-icon{width:56px;height:56px;background:#4F46E5;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+.logo-icon svg{fill:white;width:26px;height:26px}
+h1{font-size:22px;font-weight:700;color:#1E293B}
+.sub{font-size:13px;color:#64748B;margin-top:3px}
+.tabs{display:flex;background:#F8FAFC;border-radius:10px;padding:4px;gap:4px;margin-bottom:24px}
+.tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:#64748B;border:none;background:none;transition:all .2s}
+.tab.active{background:white;color:#4F46E5;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.fg{margin-bottom:16px;position:relative}
+label{display:block;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+input{width:100%;padding:11px 40px 11px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:14px;color:#1E293B;outline:none;transition:border-color .2s}
+input:focus{border-color:#4F46E5}
+.eye{position:absolute;right:12px;bottom:11px;cursor:pointer;color:#94A3B8;font-size:16px;user-select:none}
+.eye:hover{color:#4F46E5}
+.btn{width:100%;padding:13px;background:#4F46E5;color:white;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover:not(:disabled){background:#3730A3}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.err{background:#FEE2E2;color:#991B1B;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+.fp{text-align:center;margin-top:14px;font-size:13px;color:#64748B}
+.fp a{color:#4F46E5;cursor:pointer;text-decoration:none;font-weight:500}
+.fp a:hover{text-decoration:underline}
+/* Forgot password panel */
+.fp-panel{display:none}
+.fp-panel.show{display:block}
+.main-panel{display:block}
+.main-panel.hide{display:none}
+.back{background:none;border:none;color:#4F46E5;cursor:pointer;font-size:13px;font-weight:500;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:5px}
+.ok-box{background:#D1FAE5;color:#065F46;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+/* Reset password panel */
+.rp-panel{display:none}
+.rp-panel.show{display:block}
 </style>
 </head>
 <body>
@@ -40,79 +51,195 @@
     <h1>PeopleCore</h1>
     <p class="sub">Human Resource Management System</p>
   </div>
-  <div id="config-banner">
-    <strong>⚙️ Setup required</strong>
-    Open <code>config.js</code> and add your Supabase URL and anon key.
-    <a href="README.md" target="_blank">See setup guide →</a>
+
+  <!-- MAIN LOGIN -->
+  <div class="main-panel" id="main-panel">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('admin')">Admin</button>
+      <button class="tab" onclick="setTab('employee')">Employee</button>
+    </div>
+    <div id="err" class="err"></div>
+    <div class="fg">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="email">
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+      <span class="eye" onclick="togglePw('pass',this)" title="Show/hide password">👁</span>
+    </div>
+    <button class="btn" id="login-btn" onclick="login()">
+      <span id="btn-txt">Sign in</span>
+    </button>
+    <div class="fp"><a onclick="showFP()">Forgot password?</a></div>
   </div>
-  <div class="tabs">
-    <button class="tab active" onclick="setTab('admin')">Admin</button>
-    <button class="tab" onclick="setTab('employee')">Employee</button>
+
+  <!-- FORGOT PASSWORD -->
+  <div class="fp-panel" id="fp-panel">
+    <button class="back" onclick="showMain()">← Back to login</button>
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">Reset Password</div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:18px">Enter your email and we'll send a reset link.</div>
+    <div id="fp-err" class="err"></div>
+    <div id="fp-ok" class="ok-box"></div>
+    <div class="fg">
+      <label>Email</label>
+      <input type="email" id="fp-email" placeholder="you@company.com">
+    </div>
+    <button class="btn" onclick="sendReset()"><span id="fp-btn-txt">Send Reset Link</span></button>
   </div>
-  <div id="err" class="err"></div>
-  <div class="fg"><label>Email</label><input type="email" id="email" placeholder="you@company.com" autocomplete="email"></div>
-  <div class="fg"><label>Password</label><input type="password" id="pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
-  <button class="btn" id="login-btn" onclick="login()">
-    <span id="btn-text">Sign in</span>
-  </button>
-  <div class="hint">Forgot password? Contact your HR admin.</div>
+
+  <!-- RESET PASSWORD (after clicking email link) -->
+  <div class="rp-panel" id="rp-panel">
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">Set New Password</div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:18px">Choose a strong password for your account.</div>
+    <div id="rp-err" class="err"></div>
+    <div class="fg">
+      <label>New Password</label>
+      <input type="password" id="rp-pass" placeholder="Min 8 characters">
+      <span class="eye" onclick="togglePw('rp-pass',this)" title="Show/hide">👁</span>
+    </div>
+    <div class="fg">
+      <label>Confirm Password</label>
+      <input type="password" id="rp-pass2" placeholder="Repeat password">
+      <span class="eye" onclick="togglePw('rp-pass2',this)" title="Show/hide">👁</span>
+    </div>
+    <button class="btn" onclick="doReset()"><span id="rp-btn-txt">Update Password</span></button>
+  </div>
 </div>
+
 <script src="config.js"></script>
 <script>
-const { createClient } = supabase;
-let sb;
-
-try {
-  sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} catch(e) {
-  document.getElementById('config-banner').style.display='block';
-}
-
+const {createClient} = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let tab = 'admin';
-function setTab(t){
-  tab=t;
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='admin')||(i===1&&t==='employee')));
-}
 
-function showErr(msg){ const el=document.getElementById('err'); el.textContent=msg; el.style.display='block'; }
-function hideErr(){ document.getElementById('err').style.display='none'; }
+// ── Check for password reset token in URL ──
+window.addEventListener('load', async () => {
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#',''));
+  const type = params.get('type');
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
 
-async function login(){
-  hideErr();
-  const email=document.getElementById('email').value.trim();
-  const pass=document.getElementById('pass').value;
-  if(!email||!pass){ showErr('Please enter your email and password.'); return; }
-  if(!sb){ showErr('Supabase not configured. See config.js'); return; }
+  if (type === 'recovery' && accessToken) {
+    // Set the session from the recovery tokens
+    await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    showReset();
+    window.history.replaceState(null, '', window.location.pathname);
+    return;
+  }
 
-  const btn=document.getElementById('login-btn');
-  btn.disabled=true;
-  document.getElementById('btn-text').textContent='Signing in…';
-
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){ showErr(error.message); btn.disabled=false; document.getElementById('btn-text').textContent='Sign in'; return; }
-
-  // Fetch employee record to check role
-  const {data:emp}=await sb.from('employees').select('role,id,first_name').eq('user_id',data.user.id).single();
-  if(!emp){ showErr('No employee record found. Contact your admin.'); await sb.auth.signOut(); btn.disabled=false; document.getElementById('btn-text').textContent='Sign in'; return; }
-
-  if(tab==='admin' && emp.role!=='admin'){ showErr('This account does not have admin access.'); await sb.auth.signOut(); btn.disabled=false; document.getElementById('btn-text').textContent='Sign in'; return; }
-
-  window.location.href = emp.role==='admin' ? 'admin.html' : 'employee.html';
-}const hashParams = new URLSearchParams(window.location.hash.substring(1));
-const accessToken = hashParams.get('access_token');
-const type = hashParams.get('type');
-
-if (accessToken && type === 'recovery') {
-  const newPass = prompt('Enter your new password (min 8 characters):');
-  if (newPass && newPass.length >= 8) {
-    const { error } = await sb.auth.updateUser({ password: newPass });
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      alert('Password updated successfully! Please log in.');
-      window.location.hash = '';
+  // Check if already logged in
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    const { data: emp } = await sb.from('employees').select('role').eq('user_id', session.user.id).single();
+    if (emp) {
+      window.location.href = emp.role === 'admin' ? 'admin.html' : 'employee.html';
     }
   }
+});
+
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', (i===0&&t==='admin')||(i===1&&t==='employee')));
+}
+
+function togglePw(id, el) {
+  const inp = document.getElementById(id);
+  if (inp.type === 'password') { inp.type = 'text'; el.textContent = '🙈'; }
+  else { inp.type = 'password'; el.textContent = '👁'; }
+}
+
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+function hideErr(id) { document.getElementById(id).style.display='none'; }
+function showMain() { document.getElementById('main-panel').classList.remove('hide'); document.getElementById('fp-panel').classList.remove('show'); document.getElementById('rp-panel').classList.remove('show'); }
+function showFP() { document.getElementById('main-panel').classList.add('hide'); document.getElementById('fp-panel').classList.add('show'); }
+function showReset() { document.getElementById('main-panel').classList.add('hide'); document.getElementById('rp-panel').classList.add('show'); }
+
+async function login() {
+  hideErr('err');
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+  if (!email || !pass) { showErr('err','Please enter your email and password.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  document.getElementById('btn-txt').textContent = 'Signing in…';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    showErr('err', error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
+    btn.disabled = false;
+    document.getElementById('btn-txt').textContent = 'Sign in';
+    return;
+  }
+
+  const { data: emp, error: empErr } = await sb.from('employees').select('role,status').eq('user_id', data.user.id).single();
+  if (!emp) {
+    showErr('err','No employee record found. Contact your HR admin.');
+    await sb.auth.signOut();
+    btn.disabled = false;
+    document.getElementById('btn-txt').textContent = 'Sign in';
+    return;
+  }
+  if (emp.status === 'inactive' || emp.status === 'resigned' || emp.status === 'terminated' || emp.status === 'absconded') {
+    showErr('err','Your account has been deactivated. Contact HR.');
+    await sb.auth.signOut();
+    btn.disabled = false;
+    document.getElementById('btn-txt').textContent = 'Sign in';
+    return;
+  }
+  if (tab === 'admin' && emp.role !== 'admin') {
+    showErr('err','This account does not have admin access.');
+    await sb.auth.signOut();
+    btn.disabled = false;
+    document.getElementById('btn-txt').textContent = 'Sign in';
+    return;
+  }
+
+  window.location.href = emp.role === 'admin' ? 'admin.html' : 'employee.html';
+}
+
+async function sendReset() {
+  hideErr('fp-err');
+  document.getElementById('fp-ok').style.display = 'none';
+  const email = document.getElementById('fp-email').value.trim();
+  if (!email) { showErr('fp-err','Enter your email address.'); return; }
+
+  const btn = document.getElementById('fp-btn-txt');
+  btn.textContent = 'Sending…';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+
+  btn.textContent = 'Send Reset Link';
+  if (error) { showErr('fp-err', error.message); return; }
+  const ok = document.getElementById('fp-ok');
+  ok.textContent = 'Reset link sent! Check your email inbox (and spam folder).';
+  ok.style.display = 'block';
+}
+
+async function doReset() {
+  hideErr('rp-err');
+  const pass = document.getElementById('rp-pass').value;
+  const pass2 = document.getElementById('rp-pass2').value;
+  if (!pass || pass.length < 8) { showErr('rp-err','Password must be at least 8 characters.'); return; }
+  if (pass !== pass2) { showErr('rp-err','Passwords do not match.'); return; }
+
+  const btn = document.getElementById('rp-btn-txt');
+  btn.textContent = 'Updating…';
+
+  const { error } = await sb.auth.updateUser({ password: pass });
+  btn.textContent = 'Update Password';
+  if (error) { showErr('rp-err', error.message); return; }
+
+  await sb.auth.signOut();
+  showMain();
+  const ok = document.createElement('div');
+  ok.style.cssText = 'background:#D1FAE5;color:#065F46;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:14px';
+  ok.textContent = '✓ Password updated! Please sign in with your new password.';
+  document.getElementById('main-panel').prepend(ok);
 }
 </script>
 </body>

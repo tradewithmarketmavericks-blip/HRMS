@@ -7,71 +7,78 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-:root{--p:#4F46E5;--pl:#EEF2FF;--pd:#3730A3;--ok:#10B981;--okl:#D1FAE5;--wa:#F59E0B;--wal:#FEF3C7;--er:#EF4444;--erl:#FEE2E2;--bg:#F8FAFC;--sf:#fff;--sb:#1E1B4B;--sbt:#C7D2FE;--sbh:#312E81;--tx:#1E293B;--tm:#64748B;--tl:#94A3B8;--bd:#E2E8F0;--r:9px;--sh:0 1px 3px rgba(0,0,0,.08)}
+:root{--p:#4F46E5;--pl:#EEF2FF;--pd:#3730A3;--ok:#10B981;--okl:#D1FAE5;--wa:#F59E0B;--wal:#FEF3C7;--er:#EF4444;--erl:#FEE2E2;--bg:#F8FAFC;--sb:#1E1B4B;--sbt:#C7D2FE;--sbh:#312E81;--tx:#1E293B;--tm:#64748B;--tl:#94A3B8;--bd:#E2E8F0;--r:9px;--sh:0 1px 3px rgba(0,0,0,.08)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.5}
 .shell{display:flex;height:100vh;overflow:hidden}
 .sb{width:230px;background:var(--sb);display:flex;flex-direction:column;flex-shrink:0}
-.sb-hd{padding:16px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
-.sb-ico{width:32px;height:32px;background:var(--p);border-radius:7px;display:flex;align-items:center;justify-content:center}
-.sb-ico i{color:white;font-size:14px}
+.sb-hd{padding:15px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
+.sb-ico{width:31px;height:31px;background:var(--p);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-ico i{color:white;font-size:13px}
 .sb-title{color:white;font-weight:700;font-size:14px}
-.sb-user{padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
-.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
-.u-name{color:white;font-size:13px;font-weight:600}
+.sb-user{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
+.av{width:33px;height:33px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
+.u-name{color:white;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .u-role{color:var(--sbt);font-size:11px}
-.sb-nav{flex:1;padding:10px 8px;overflow-y:auto}
-.nl{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;padding:8px 10px 3px}
+.sb-nav{flex:1;padding:9px 8px;overflow-y:auto}
+.nl{font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;padding:7px 10px 3px}
 .ni{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:7px;cursor:pointer;color:var(--sbt);font-size:13px;font-weight:500;transition:all .15s;margin-bottom:1px}
 .ni:hover{background:var(--sbh);color:white}
 .ni.on{background:var(--p);color:white}
-.ni i{width:17px;text-align:center;font-size:13px}
-.sb-ft{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08)}
+.ni i{width:16px;text-align:center;font-size:13px;flex-shrink:0}
+.sb-ft{padding:9px 8px;border-top:1px solid rgba(255,255,255,.08)}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{background:white;border-bottom:1px solid var(--bd);padding:0 22px;height:57px;display:flex;align-items:center;gap:14px;box-shadow:var(--sh);flex-shrink:0}
+.topbar{background:white;border-bottom:1px solid var(--bd);padding:0 20px;height:56px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh);flex-shrink:0}
 .tb-title{font-size:15px;font-weight:700}
-.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.lob{padding:7px 13px;border:1px solid var(--bd);border-radius:7px;background:white;color:var(--tm);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
-.ct{flex:1;overflow-y:auto;padding:22px}
-.card{background:white;border-radius:var(--r);border:1px solid var(--bd);box-shadow:var(--sh)}
-.ch{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
-.ct2{padding:18px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.lob{padding:7px 12px;border:1px solid var(--bd);border-radius:7px;background:white;color:var(--tm);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
+.ct{flex:1;overflow-y:auto;padding:20px}
+.card{background:white;border-radius:var(--r);border:1px solid var(--bd);box-shadow:var(--sh);margin-bottom:15px}
+.ch{padding:13px 17px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ct2{padding:17px}
 .ctitle{font-size:14px;font-weight:700}
-.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.sc{background:white;border-radius:var(--r);padding:18px;border:1px solid var(--bd);position:relative;overflow:hidden}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
+.sc{background:white;border-radius:var(--r);padding:16px;border:1px solid var(--bd);position:relative;overflow:hidden}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
 .sc.b::before{background:var(--p)}.sc.g::before{background:var(--ok)}.sc.a::before{background:var(--wa)}.sc.r::before{background:var(--er)}
-.sc .sl{font-size:11px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.sc .sv{font-size:26px;font-weight:700;line-height:1;margin-bottom:5px}
+.sc .sl{font-size:11px;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.sc .sv{font-size:24px;font-weight:700;line-height:1;margin-bottom:4px}
 .sc .ss{font-size:12px;color:var(--tl)}
-.sc .si{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.sc .si{position:absolute;right:13px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
 .sc.b .si{background:var(--pl);color:var(--p)}.sc.g .si{background:var(--okl);color:var(--ok)}.sc.a .si{background:var(--wal);color:var(--wa)}.sc.r .si{background:var(--erl);color:var(--er)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
 .bx{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .ok{background:var(--okl);color:#065F46}.wa{background:var(--wal);color:#92400E}.er{background:var(--erl);color:#991B1B}.pr{background:var(--pl);color:var(--pd)}.gy{background:#F1F5F9;color:#475569}.bl{background:#DBEAFE;color:#1D4ED8}.pu{background:#EDE9FE;color:#5B21B6}
-.btn{padding:8px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn{padding:8px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
 .bp{background:var(--p);color:white}.bp:hover{background:var(--pd)}
 .bo{background:white;border:1px solid var(--bd);color:var(--tx)}.bo:hover{background:var(--bg)}
+.bd2{background:var(--er);color:white}
 .bsm{padding:5px 9px;font-size:12px}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
 .fr.f1{grid-template-columns:1fr}
 .lbl{display:block;font-size:11px;font-weight:700;color:var(--tm);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
 input.i,select.i,textarea.i{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;color:var(--tx);outline:none;background:white;transition:border-color .2s;font-family:inherit}
 input.i:focus,select.i:focus,textarea.i:focus{border-color:var(--p)}
 textarea.i{resize:vertical;min-height:76px}
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:1000;align-items:center;justify-content:center}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:36px}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--tl);font-size:14px}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
 .mo.op{display:flex}
-.md{background:white;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:540px;max-height:88vh;overflow-y:auto}
-.mh{padding:18px 22px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;border-radius:14px 14px 0 0}
+.md{background:white;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.mh{padding:16px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:white;z-index:1;border-radius:14px 14px 0 0}
 .mt{font-size:15px;font-weight:700}
-.mb2{padding:22px}
-.mf{padding:14px 22px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:white}
-.xb{width:28px;height:28px;border-radius:6px;border:1px solid var(--bd);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tm)}
+.mb2{padding:20px}
+.mf{padding:13px 20px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:9px;position:sticky;bottom:0;background:white;border-radius:0 0 14px 14px}
+.xb{width:27px;height:27px;border-radius:6px;border:1px solid var(--bd);background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tm);font-size:12px}
 .flex{display:flex;align-items:center}
-.gap2{gap:8px}.gap3{gap:12px}
-.mb4{margin-bottom:16px}.mb5{margin-bottom:20px}
-.ri{padding:11px 0;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.gap2{gap:8px}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.ph h2{font-size:18px;font-weight:700}
+.ph p{font-size:12px;color:var(--tm);margin-top:2px}
+.ri{padding:10px 0;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .ri:last-child{border-bottom:none}
 .prog{height:6px;background:var(--bd);border-radius:3px;overflow:hidden}
 .pb{height:100%;border-radius:3px}
@@ -79,62 +86,61 @@ textarea.i{resize:vertical;min-height:76px}
 .lbh{display:flex;justify-content:space-between;margin-bottom:3px;font-size:13px}
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;padding:9px 13px;background:var(--bg);border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
-td{padding:11px 13px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:middle}
+th{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;background:var(--bg);border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-.clock-card{background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%);border-radius:14px;padding:26px;color:white;text-align:center;margin-bottom:18px}
-.clock-time{font-size:44px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
-.clock-date{font-size:13px;opacity:.8;margin-bottom:18px}
-.clock-status{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.15);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;margin-bottom:18px}
+.clock-card{background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%);border-radius:14px;padding:24px;color:white;text-align:center;margin-bottom:15px}
+.clock-time{font-size:42px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.clock-date{font-size:13px;opacity:.8;margin-bottom:16px}
+.clock-status{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.15);padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;margin-bottom:16px}
 .clock-dot{width:7px;height:7px;border-radius:50%}
-.clock-btns{display:flex;gap:10px;justify-content:center}
-.cbtn{padding:10px 24px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
-.cbtn:hover{transform:scale(1.03)}
+.clock-btns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.cbtn{padding:10px 22px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
+.cbtn:hover:not(:disabled){transform:scale(1.03)}
 .cbtn-in{background:white;color:var(--p)}
 .cbtn-out{background:rgba(255,255,255,.2);color:white;border:2px solid rgba(255,255,255,.4)}
-.qa{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px}
-.qa-btn{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--bd);background:white;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx);transition:all .15s}
+.cbtn:disabled{opacity:.5;cursor:not-allowed}
+.qa{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px}
+.qa-btn{display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:8px;border:1.5px solid var(--bd);background:white;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx);transition:all .15s}
 .qa-btn:hover{border-color:var(--p);color:var(--p);background:var(--pl)}
-.qa-btn i{font-size:13px}
 .payslip-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
 .payslip-row:last-child{border-bottom:none}
-.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.ph h2{font-size:18px;font-weight:700}
-.ph p{font-size:12px;color:var(--tm);margin-top:2px}
-.empty{text-align:center;padding:32px;color:var(--tl)}
-.empty i{font-size:28px;margin-bottom:8px;display:block;opacity:.4}
+.empty{text-align:center;padding:28px;color:var(--tl)}
+.empty i{font-size:26px;margin-bottom:8px;display:block;opacity:.4}
 .loading{text-align:center;padding:32px;color:var(--tm)}
-.well-survey .qi{padding:13px 0;border-bottom:1px solid var(--bd)}
+.well-survey .qi{padding:12px 0;border-bottom:1px solid var(--bd)}
 .well-survey .qi:last-child{border-bottom:none}
-.well-survey .qt{font-size:13px;margin-bottom:9px}
+.well-survey .qt{font-size:13px;margin-bottom:8px}
 .well-survey .rating{display:flex;gap:7px}
 .well-survey .rating input{display:none}
 .well-survey .rating label{width:32px;height:32px;border-radius:7px;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .well-survey .rating input:checked+label,.well-survey .rating label:hover{background:var(--p);border-color:var(--p);color:white}
 .av32{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-.cdh{text-align:center;font-size:10px;font-weight:700;color:var(--tm);padding:5px 0;text-transform:uppercase}
-.cd{min-height:30px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:12px;cursor:default}
+.cdh{text-align:center;font-size:10px;font-weight:700;color:var(--tm);padding:4px 0;text-transform:uppercase}
+.cd{min-height:29px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:12px}
 .cd.today{background:var(--p);color:white;font-weight:700}
 .cd.hol{background:var(--erl);color:var(--er);font-weight:600}
 .cd.wkd{color:var(--tl)}
 .cd.lv{background:var(--wal);color:#92400E}
-#toast{position:fixed;bottom:22px;right:22px;background:var(--tx);color:white;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);transition:transform .3s;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.profile-field{margin-bottom:14px}
+.profile-field .pf-label{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.profile-field .pf-val{font-size:14px;font-weight:500}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--tx);color:white;padding:11px 17px;border-radius:9px;font-size:13px;font-weight:500;z-index:9999;transform:translateY(80px);transition:transform .3s;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 #toast.show{transform:translateY(0)}
 #toast.ok{background:var(--ok)}
 #toast.wa{background:var(--wa)}
+#toast.er{background:var(--er)}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+@media(max-width:768px){.sb{width:0;overflow:hidden}.sg{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="sb">
     <div class="sb-hd"><div class="sb-ico"><i class="fas fa-people-group"></i></div><span class="sb-title">PeopleCore</span></div>
-    <div class="sb-user">
-      <div class="av" id="sb-av" style="background:#4F46E5">--</div>
-      <div><div class="u-name" id="sb-name">Loading…</div><div class="u-role" id="sb-role">Employee</div></div>
-    </div>
+    <div class="sb-user"><div class="av" id="sb-av" style="background:#4F46E5">--</div><div style="overflow:hidden"><div class="u-name" id="sb-name">Loading…</div><div class="u-role" id="sb-role">Employee</div></div></div>
     <nav class="sb-nav">
       <div class="nl">My Workspace</div>
       <div class="ni on" data-pg="dashboard"><i class="fas fa-house"></i>My Dashboard</div>
@@ -145,21 +151,20 @@ tr:last-child td{border-bottom:none}
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing Check-in</div>
       <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
       <div class="ni" data-pg="directory"><i class="fas fa-address-book"></i>Directory</div>
+      <div class="nl">Account</div>
+      <div class="ni" data-pg="profile"><i class="fas fa-user-circle"></i>My Profile</div>
     </nav>
-    <div class="sb-ft">
-      <div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div>
-    </div>
+    <div class="sb-ft"><div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div></div>
   </div>
   <div class="main">
     <div class="topbar">
       <div class="tb-title" id="tb-title">My Dashboard</div>
       <div class="tb-right">
+        <button class="lob" onclick="nav('profile')"><i class="fas fa-user"></i>My Profile</button>
         <button class="lob" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</button>
       </div>
     </div>
-    <div class="ct" id="ct">
-      <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>
-    </div>
+    <div class="ct" id="ct"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
   </div>
 </div>
 
@@ -170,103 +175,96 @@ tr:last-child td{border-bottom:none}
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-
-let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],clockedIn=false,clockInTime=null,clockTimer=null,myAttendance=[];
-const COLORS=['#4F46E5','#7C3AED','#059669','#DC2626','#D97706','#0891B2','#0F766E','#9333EA','#BE185D'];
+let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],myAttendance=[],clockedIn=false,clockInTime=null,clockTimer=null,todayAtt=null;
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){location.href='index.html';return;}
   const {data:emp}=await sb.from('employees').select('*').eq('user_id',session.user.id).single();
-  if(!emp){location.href='index.html';return;}
+  if(!emp){await sb.auth.signOut();location.href='index.html';return;}
+  if(['resigned','terminated','absconded','inactive'].includes(emp.status)){await sb.auth.signOut();location.href='index.html';return;}
   me=emp;
-  document.getElementById('sb-av').textContent=ini(me.first_name,me.last_name);
-  document.getElementById('sb-av').style.background=me.avatar_color||'#4F46E5';
+  setAv('sb-av',me.first_name,me.last_name,me.avatar_color);
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
   document.getElementById('sb-role').textContent=me.designation||me.department||'Employee';
-  await Promise.all([loadMyData(),loadHolidays(),loadAllEmployees()]);
+  await Promise.all([loadMyData(),loadHolidays(),loadAllEmp()]);
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>nav(el.dataset.pg));
   nav('dashboard');
 }
 
 async function loadMyData(){
   const now=new Date();
-  const [l,b,a]=await Promise.all([
+  const today=now.toISOString().split('T')[0];
+  const [l,b,a,ta]=await Promise.all([
     sb.from('leave_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
     sb.from('leave_balances').select('*').eq('employee_id',me.id).eq('year',now.getFullYear()),
     sb.from('attendance').select('*').eq('employee_id',me.id).order('date',{ascending:false}).limit(30),
+    sb.from('attendance').select('*').eq('employee_id',me.id).eq('date',today).single(),
   ]);
-  myLeaves=l.data||[];
-  myBalances=b.data||[];
-  myAttendance=a.data||[];
+  myLeaves=l.data||[];myBalances=b.data||[];myAttendance=a.data||[];
+  todayAtt=ta.data||null;
+  if(todayAtt?.check_in&&!todayAtt?.check_out){clockedIn=true;clockInTime=new Date(todayAtt.check_in);}
 }
-async function loadHolidays(){
-  const {data}=await sb.from('holidays').select('*').order('date');
-  holidays=data||[];
-}
-async function loadAllEmployees(){
-  const {data}=await sb.from('employees').select('first_name,last_name,email,phone,department,designation,avatar_color,status').eq('status','active');
-  allEmployees=data||[];
-}
+async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
+async function loadAllEmp(){const {data}=await sb.from('employees').select('first_name,last_name,email,phone,department,designation,avatar_color,status').neq('status','inactive').neq('status','terminated');allEmployees=data||[];}
 
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
-  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory'};
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
-  const ct=document.getElementById('ct');
-  ct.innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  const renders={dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory};
-  if(renders[pg])renders[pg]();
+  clearInterval(clockTimer);
+  document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,profile:renderProfile})[pg]?.();
 }
 
 // ─── DASHBOARD ───
 async function renderDashboard(){
-  const today=new Date().toISOString().split('T')[0];
   const present=myAttendance.filter(a=>a.status==='present').length;
-  const totalDays=myAttendance.length||1;
-  const wfhCount=myAttendance.filter(a=>a.type==='WFH').length;
-  const annualBal=myBalances.find(b=>b.leave_type==='Annual Leave');
-  const pendingLeaves=myLeaves.filter(l=>l.status==='pending').length;
-
+  const wfh=myAttendance.filter(a=>a.type==='WFH').length;
+  const annBal=myBalances.find(b=>b.leave_type==='Annual Leave');
+  const pending=myLeaves.filter(l=>l.status==='pending').length;
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>Welcome back, ${me.first_name} 👋</h2><p>${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</p></div></div>
   <div class="qa">
-    <button class="qa-btn" onclick="clockAction()"><i class="fas fa-fingerprint"></i> Mark Attendance</button>
+    <button class="qa-btn" onclick="nav('attendance')"><i class="fas fa-fingerprint"></i> Mark Attendance</button>
     <button class="qa-btn" onclick="openLeaveModal('Annual Leave')"><i class="fas fa-umbrella-beach"></i> Apply Leave</button>
-    <button class="qa-btn" onclick="openLeaveModal('Work From Home')"><i class="fas fa-house-laptop"></i> Request WFH</button>
+    <button class="qa-btn" onclick="openLeaveModal('Work From Home')"><i class="fas fa-house-laptop"></i> WFH Request</button>
     <button class="qa-btn" onclick="openLeaveModal('Comp Off')"><i class="fas fa-arrows-rotate"></i> Comp Off</button>
+    <button class="qa-btn" onclick="nav('payslip')"><i class="fas fa-file-invoice-dollar"></i> View Payslip</button>
   </div>
   <div class="sg">
-    <div class="sc g"><div class="sl">Attendance</div><div class="sv">${Math.round((present/totalDays)*100)}%</div><div class="ss">This month</div><div class="si"><i class="fas fa-calendar-check"></i></div></div>
-    <div class="sc b"><div class="sl">Leave Balance</div><div class="sv">${annualBal?(annualBal.total_days-annualBal.used_days):'—'}</div><div class="ss">Annual days left</div><div class="si"><i class="fas fa-umbrella-beach"></i></div></div>
-    <div class="sc a"><div class="sl">Pending Requests</div><div class="sv">${pendingLeaves}</div><div class="ss">Awaiting approval</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
-    <div class="sc r"><div class="sl">WFH Days</div><div class="sv">${wfhCount}</div><div class="ss">This month</div><div class="si"><i class="fas fa-house-laptop"></i></div></div>
+    <div class="sc g"><div class="sl">Attendance</div><div class="sv">${present?Math.round((present/myAttendance.length)*100)+'%':'—'}</div><div class="ss">This month</div><div class="si"><i class="fas fa-calendar-check"></i></div></div>
+    <div class="sc b"><div class="sl">Leave Balance</div><div class="sv">${annBal?(annBal.total_days-annBal.used_days):'—'}</div><div class="ss">Annual days left</div><div class="si"><i class="fas fa-umbrella-beach"></i></div></div>
+    <div class="sc a"><div class="sl">Pending</div><div class="sv">${pending}</div><div class="ss">Awaiting approval</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
+    <div class="sc r"><div class="sl">WFH Days</div><div class="sv">${wfh}</div><div class="ss">This month</div><div class="si"><i class="fas fa-house-laptop"></i></div></div>
   </div>
   <div class="g2">
     <div>
-      <div class="clock-card">
+      <div class="clock-card" id="clock-card">
         <div class="clock-time" id="clk">--:--:--</div>
         <div class="clock-date">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-        <div class="clock-status"><div class="clock-dot" id="clk-dot" style="background:#34D399"></div><span id="clk-txt">Not clocked in</span></div>
+        <div class="clock-status"><div class="clock-dot" id="clk-dot" style="background:${clockedIn?'#F59E0B':'#34D399'}"></div><span id="clk-txt">${clockedIn?'Clocked in at '+new Date(clockInTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'Not clocked in'}</span></div>
         <div class="clock-btns">
-          <button class="cbtn cbtn-in" id="clk-btn" onclick="clockAction()">Clock In</button>
+          <button class="cbtn cbtn-${clockedIn?'out':'in'}" id="clk-btn" onclick="clockAction('clk-btn','clk-dot','clk-txt')">${clockedIn?'Clock Out':'Clock In'}</button>
+          <button class="cbtn" style="background:rgba(255,255,255,.2);color:white;border:2px solid rgba(255,255,255,.35)" onclick="openLeaveModal('Work From Home')"><i class="fas fa-house-laptop"></i> WFH</button>
         </div>
       </div>
       <div class="card"><div class="ch"><span class="ctitle">Leave Balances</span></div><div class="ct2">
         ${myBalances.length?myBalances.map(b=>{
           const used=b.used_days||0,total=b.total_days||0;
           const pct=total>0?Math.round((used/total)*100):0;
-          return `<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span>${total-used} / ${total} days left</span></div><div class="prog"><div class="pb" style="width:${pct}%;background:var(--p)"></div></div></div>`;
-        }).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No balance data. Contact admin.</div>'}
+          return `<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span>${total-used}/${total} left</span></div><div class="prog"><div class="pb" style="width:${Math.max(1,pct)}%;background:var(--p)"></div></div></div>`;
+        }).join(''):'<div class="empty">No leave balance. Contact admin.</div>'}
       </div></div>
     </div>
-    <div class="card"><div class="ch"><span class="ctitle">Recent Requests</span></div><div class="ct2">
-      ${myLeaves.length?myLeaves.slice(0,6).map(l=>`
+    <div class="card"><div class="ch"><span class="ctitle">Recent Requests</span><button class="btn bo bsm" onclick="nav('leaves')">View all</button></div><div class="ct2">
+      ${myLeaves.length?myLeaves.slice(0,5).map(l=>`
       <div class="ri"><div>
         <div style="font-size:13px;font-weight:600">${l.leave_type}</div>
-        <div style="font-size:12px;color:var(--tm)">${fmtDate(l.from_date)}${l.to_date!==l.from_date?' → '+fmtDate(l.to_date):''} · ${l.days} day(s)</div>
+        <div style="font-size:12px;color:var(--tm)">${fd(l.from_date)}${l.to_date!==l.from_date?' → '+fd(l.to_date):''} · ${l.days} day(s)</div>
         ${l.reason?`<div style="font-size:12px;color:var(--tl)">${l.reason}</div>`:''}
-      </div><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}">${l.status}</span></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No requests yet</div>'}
+      </div><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}">${l.status}</span></div>`).join('')
+      :'<div class="empty"><i class="fas fa-inbox"></i>No requests yet</div>'}
     </div></div>
   </div>`;
   startClock();
@@ -274,87 +272,75 @@ async function renderDashboard(){
 
 // ─── CLOCK ───
 function startClock(){
-  function tick(){
-    const t=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-    const el=document.getElementById('clk');if(el)el.textContent=t;
-    else clearInterval(clockTimer);
-  }
+  function tick(){const t=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});['clk','clk2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;});}
   tick();clearInterval(clockTimer);clockTimer=setInterval(tick,1000);
 }
 
-async function clockAction(){
+async function clockAction(btnId,dotId,txtId){
   const today=new Date().toISOString().split('T')[0];
-  const existing=myAttendance.find(a=>a.date===today);
-  if(!clockedIn&&!existing?.check_in){
-    clockedIn=true;clockInTime=new Date();
-    const {error}=await sb.from('attendance').upsert({employee_id:me.id,date:today,check_in:clockInTime.toISOString(),status:'present',type:'Office'},{onConflict:'employee_id,date'});
-    if(error){toast('Error: '+error.message,'er');clockedIn=false;return;}
-    const dot=document.getElementById('clk-dot'),txt=document.getElementById('clk-txt'),btn=document.getElementById('clk-btn');
-    if(dot)dot.style.background='#F59E0B';
-    if(txt)txt.textContent='Clocked in at '+clockInTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const btn=document.getElementById(btnId);
+  const dot=document.getElementById(dotId);
+  const txt=document.getElementById(txtId);
+  if(btn)btn.disabled=true;
+
+  if(!clockedIn){
+    const now=new Date();
+    const {error}=await sb.from('attendance').upsert({employee_id:me.id,date:today,check_in:now.toISOString(),status:'present',type:'Office'},{onConflict:'employee_id,date'});
+    if(error){toast('Error: '+error.message,'er');if(btn)btn.disabled=false;return;}
+    clockedIn=true;clockInTime=now;
     if(btn){btn.textContent='Clock Out';btn.className='cbtn cbtn-out';}
-    toast('Clocked in at '+clockInTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),'ok');
-  } else if(clockedIn){
-    const out=new Date();
-    const hours=clockInTime?Math.round((out-clockInTime)/3600000*10)/10:0;
-    const {error}=await sb.from('attendance').update({check_out:out.toISOString(),hours_worked:hours}).eq('employee_id',me.id).eq('date',today);
-    if(error){toast('Error: '+error.message,'er');return;}
-    clockedIn=false;
-    const dot=document.getElementById('clk-dot'),txt=document.getElementById('clk-txt'),btn=document.getElementById('clk-btn');
+    if(dot)dot.style.background='#F59E0B';
+    if(txt)txt.textContent='Clocked in at '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    toast('Clocked in!','ok');
+  } else {
+    const now=new Date();
+    const hours=clockInTime?Math.round((now-clockInTime)/3600000*10)/10:0;
+    const {error}=await sb.from('attendance').update({check_out:now.toISOString(),hours_worked:hours}).eq('employee_id',me.id).eq('date',today);
+    if(error){toast('Error: '+error.message,'er');if(btn)btn.disabled=false;return;}
+    clockedIn=false;clockInTime=null;
+    if(btn){btn.textContent='Clock In';btn.className='cbtn cbtn-in';}
     if(dot)dot.style.background='#34D399';
     if(txt)txt.textContent='Not clocked in';
-    if(btn){btn.textContent='Clock In';btn.className='cbtn cbtn-in';}
     toast(`Clocked out · ${hours}h logged`,'ok');
     await loadMyData();
-  } else {
-    toast('Already clocked in today. Contact admin to edit.','wa');
   }
+  if(btn)btn.disabled=false;
 }
 
 // ─── ATTENDANCE ───
 async function renderAttendance(){
-  const today=new Date().toISOString().split('T')[0];
   const present=myAttendance.filter(a=>a.status==='present').length;
   const wfh=myAttendance.filter(a=>a.type==='WFH').length;
-  const absent=myAttendance.filter(a=>a.status==='absent').length;
-  const avgHrs=myAttendance.filter(a=>a.hours_worked).length?
-    (myAttendance.filter(a=>a.hours_worked).reduce((s,a)=>s+(a.hours_worked||0),0)/myAttendance.filter(a=>a.hours_worked).length).toFixed(1):0;
+  const hrs=myAttendance.filter(a=>a.hours_worked);
+  const avgHrs=hrs.length?(hrs.reduce((s,a)=>s+(a.hours_worked||0),0)/hrs.length).toFixed(1):0;
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>My Attendance</h2></div></div>
-  <div class="clock-card" style="max-width:460px;margin:0 auto 20px">
+  <div class="clock-card" style="max-width:460px;margin:0 auto 18px">
     <div class="clock-time" id="clk2">--:--:--</div>
     <div class="clock-date">${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
-    <div class="clock-status"><div class="clock-dot" id="clk-dot2" style="background:#34D399"></div><span id="clk-txt2">Not clocked in</span></div>
+    <div class="clock-status"><div class="clock-dot" id="clk-dot2" style="background:${clockedIn?'#F59E0B':'#34D399'}"></div><span id="clk-txt2">${clockedIn?'Clocked in at '+new Date(clockInTime).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'Not clocked in'}</span></div>
     <div class="clock-btns">
-      <button class="cbtn cbtn-in" id="clk-btn2" onclick="clockAction2()">Clock In</button>
-      <button class="cbtn" style="background:rgba(255,255,255,.2);color:white;border:2px solid rgba(255,255,255,.4)" onclick="openLeaveModal('Work From Home')"><i class="fas fa-house-laptop"></i> WFH</button>
+      <button class="cbtn cbtn-${clockedIn?'out':'in'}" id="clk-btn2" onclick="clockAction('clk-btn2','clk-dot2','clk-txt2')">${clockedIn?'Clock Out':'Clock In'}</button>
+      <button class="cbtn" style="background:rgba(255,255,255,.2);color:white;border:2px solid rgba(255,255,255,.35)" onclick="openLeaveModal('Work From Home')"><i class="fas fa-house-laptop"></i> WFH</button>
     </div>
   </div>
   <div class="sg">
-    <div class="sc g"><div class="sl">Present Days</div><div class="sv">${present}</div><div class="ss">This month</div><div class="si"><i class="fas fa-check"></i></div></div>
-    <div class="sc b"><div class="sl">WFH Days</div><div class="sv">${wfh}</div><div class="ss">This month</div><div class="si"><i class="fas fa-house-laptop"></i></div></div>
-    <div class="sc r"><div class="sl">Absent</div><div class="sv">${absent}</div><div class="ss">This month</div><div class="si"><i class="fas fa-times"></i></div></div>
+    <div class="sc g"><div class="sl">Present</div><div class="sv">${present}</div><div class="ss">Days this month</div><div class="si"><i class="fas fa-check"></i></div></div>
+    <div class="sc b"><div class="sl">WFH</div><div class="sv">${wfh}</div><div class="ss">Days this month</div><div class="si"><i class="fas fa-house-laptop"></i></div></div>
+    <div class="sc r"><div class="sl">Absent</div><div class="sv">${myAttendance.filter(a=>a.status==='absent').length}</div><div class="ss">Days this month</div><div class="si"><i class="fas fa-times"></i></div></div>
     <div class="sc a"><div class="sl">Avg Hours</div><div class="sv">${avgHrs}h</div><div class="ss">Per day</div><div class="si"><i class="fas fa-clock"></i></div></div>
   </div>
   <div class="card"><div class="ch"><span class="ctitle">Attendance Log</span></div>
   <div class="tw"><table><thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Type</th><th>Status</th></tr></thead>
   <tbody>${myAttendance.length?myAttendance.map(a=>`<tr>
-    <td style="font-weight:600">${fmtDate(a.date)}</td>
+    <td style="font-weight:600">${fd(a.date)}</td>
     <td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
     <td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
     <td>${a.hours_worked?a.hours_worked+'h':'-'}</td>
     <td><span class="bx ${a.type==='WFH'?'bl':a.type==='Half Day'?'wa':'ok'}">${a.type||'Office'}</span></td>
     <td><span class="bx ${a.status==='present'?'ok':'er'}">${a.status}</span></td>
-  </tr>`).join(''):'<tr><td colspan="6" class="empty">No attendance records yet. Start by clocking in above!</td></tr>'}</tbody></table></div></div>`;
-  let ci2=false,ct2i=null;
-  function tick2(){const t=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const el=document.getElementById('clk2');if(el)el.textContent=t;}
-  tick2();setInterval(tick2,1000);
-  window.clockAction2=async()=>{
-    if(!ci2){ci2=true;ct2i=new Date();const d=document.getElementById('clk-dot2'),t=document.getElementById('clk-txt2'),b=document.getElementById('clk-btn2');if(d)d.style.background='#F59E0B';if(t)t.textContent='Clocked in at '+ct2i.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});if(b){b.textContent='Clock Out';b.className='cbtn cbtn-out';}
-    await sb.from('attendance').upsert({employee_id:me.id,date:new Date().toISOString().split('T')[0],check_in:ct2i.toISOString(),status:'present',type:'Office'},{onConflict:'employee_id,date'});
-    toast('Clocked in!','ok');}
-    else{const out=new Date(),hrs=Math.round((out-ct2i)/3600000*10)/10;await sb.from('attendance').update({check_out:out.toISOString(),hours_worked:hrs}).eq('employee_id',me.id).eq('date',out.toISOString().split('T')[0]);ci2=false;const d=document.getElementById('clk-dot2'),t=document.getElementById('clk-txt2'),b=document.getElementById('clk-btn2');if(d)d.style.background='#34D399';if(t)t.textContent='Not clocked in';if(b){b.textContent='Clock In';b.className='cbtn cbtn-in';}toast(`Clocked out · ${hrs}h`,'ok');}
-  };
+  </tr>`).join(''):'<tr><td colspan="6" class="empty">No records yet. Clock in to start!</td></tr>'}</tbody></table></div></div>`;
+  startClock();
 }
 
 // ─── LEAVES ───
@@ -362,149 +348,175 @@ async function renderLeaves(){
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>My Leaves</h2></div>
     <button class="btn bp" onclick="openLeaveModal('Annual Leave')"><i class="fas fa-plus"></i> Apply Leave</button></div>
-  <div class="g2 mb5">
+  <div class="g2">
     <div class="card"><div class="ch"><span class="ctitle">Leave Balance</span></div><div class="ct2">
       ${myBalances.length?myBalances.map(b=>{
         const used=b.used_days||0,total=b.total_days||0;
-        const pct=total>0?Math.round((used/total)*100):0;
-        return `<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span>${total-used} / ${total} remaining</span></div><div class="prog"><div class="pb" style="width:${Math.max(1,pct)}%;background:var(--p)"></div></div></div>`;
+        return `<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span>${total-used}/${total} remaining</span></div><div class="prog"><div class="pb" style="width:${total>0?Math.max(1,Math.round((used/total)*100)):0}%;background:var(--p)"></div></div></div>`;
       }).join(''):'<div class="empty">No leave balance data. Contact admin.</div>'}
     </div></div>
     <div class="card"><div class="ch"><span class="ctitle">${new Date().toLocaleString('default',{month:'long',year:'numeric'})}</span></div><div class="ct2">${buildCal()}</div></div>
   </div>
   <div class="card"><div class="ch"><span class="ctitle">Leave History</span></div>
-  <div class="tw"><table><thead><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead>
+  <div class="tw"><table><thead><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
   <tbody>${myLeaves.length?myLeaves.map(l=>`<tr>
     <td><span class="bx bl">${l.leave_type}</span></td>
-    <td>${fmtDate(l.from_date)}</td><td>${fmtDate(l.to_date)}</td><td>${l.days}</td>
-    <td style="color:var(--tm);font-size:12px;max-width:160px">${l.reason||'-'}</td>
+    <td>${fd(l.from_date)}</td><td>${fd(l.to_date)}</td><td>${l.days}</td>
+    <td style="color:var(--tm);font-size:12px;max-width:150px">${l.reason||'-'}</td>
     <td><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}">${l.status}</span></td>
-  </tr>`).join(''):'<tr><td colspan="6" class="empty">No leave history. Apply your first leave above!</td></tr>'}</tbody></table></div></div>`;
+    <td>${l.status==='pending'?`<button class="btn bd2 bsm" onclick="cancelLeave('${l.id}')"><i class="fas fa-times"></i> Cancel</button>`:'-'}</td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No leave history yet.</td></tr>'}</tbody></table></div></div>`;
 }
 
 function openLeaveModal(type='Annual Leave'){
   document.getElementById('md').innerHTML=`
   <div class="mh"><span class="mt">Apply for Leave / WFH</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
-    <div class="fr f1"><div><label class="lbl">Leave Type</label><select class="i" id="lt"><option ${type==='Annual Leave'?'selected':''}>Annual Leave</option><option ${type==='Sick Leave'?'selected':''}>Sick Leave</option><option ${type==='Casual Leave'?'selected':''}>Casual Leave</option><option ${type==='Comp Off'?'selected':''}>Comp Off</option><option ${type==='Work From Home'?'selected':''}>Work From Home</option><option>Maternity Leave</option><option>Paternity Leave</option><option>Unpaid Leave</option></select></div></div>
-    <div class="fr"><div><label class="lbl">From Date</label><input class="i" type="date" id="lf"></div><div><label class="lbl">To Date</label><input class="i" type="date" id="lt2"></div></div>
-    <div class="fr f1"><div><label class="lbl">Reason</label><textarea class="i" id="lr" placeholder="Brief reason…"></textarea></div></div>
+    <div class="fr f1"><div><label class="lbl">Leave Type</label><select class="i" id="lt">
+      ${['Annual Leave','Sick Leave','Casual Leave','Comp Off','Work From Home','Maternity Leave','Paternity Leave','Unpaid Leave'].map(t=>`<option ${t===type?'selected':''}>${t}</option>`).join('')}
+    </select></div></div>
+    <div class="fr"><div><label class="lbl">From Date</label><input class="i" type="date" id="lf" min="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">To Date</label><input class="i" type="date" id="lt2" min="${new Date().toISOString().split('T')[0]}"></div></div>
+    <div class="fr f1"><div><label class="lbl">Reason</label><textarea class="i" id="lr" placeholder="Brief reason for leave…"></textarea></div></div>
+    <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Requests are subject to manager approval. You'll see the status updated here.</div>
   </div>
-  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" onclick="submitLeave()">Submit Request</button></div>`;
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="submit-leave-btn" onclick="submitLeave()"><i class="fas fa-paper-plane"></i> Submit Request</button></div>`;
   document.getElementById('mo').classList.add('op');
 }
 
 async function submitLeave(){
   const from=v('lf'),to=v('lt2'),lt=v('lt'),reason=v('lr');
-  if(!from||!to){toast('Select from and to dates','wa');return;}
-  if(new Date(to)<new Date(from)){toast('To date must be after from date','wa');return;}
+  if(!from||!to){toast('Please select from and to dates','wa');return;}
+  if(new Date(to)<new Date(from)){toast('To date must be on or after from date','wa');return;}
+  setBtnLoad('submit-leave-btn',true,'Submitting…');
   const days=Math.ceil((new Date(to)-new Date(from))/86400000)+1;
+  // Check balance
+  const bal=myBalances.find(b=>b.leave_type===lt);
+  if(bal&&(bal.total_days-bal.used_days)<days&&!['Sick Leave','Maternity Leave','Paternity Leave','Unpaid Leave'].includes(lt)){
+    toast(`Insufficient ${lt} balance. You have ${bal.total_days-bal.used_days} days left.`,'wa');
+    setBtnLoad('submit-leave-btn',false,'Submit Request');return;
+  }
   const {error}=await sb.from('leave_requests').insert({employee_id:me.id,leave_type:lt,from_date:from,to_date:to,days,reason,status:'pending'});
-  if(error){toast('Error: '+error.message,'er');return;}
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('submit-leave-btn',false,'Submit Request');return;}
   closeMo();toast('Leave request submitted!','ok');
   await loadMyData();nav('leaves');
+}
+
+async function cancelLeave(id){
+  const {error}=await sb.from('leave_requests').delete().eq('id',id).eq('status','pending');
+  if(error){toast('Error: '+error.message,'er');return;}
+  myLeaves=myLeaves.filter(l=>l.id!==id);
+  toast('Leave request cancelled.','ok');renderLeaves();
 }
 
 // ─── PAYSLIP ───
 async function renderPayslip(){
   const now=new Date();
-  const {data:payroll}=await sb.from('payroll').select('*').eq('employee_id',me.id).order('year',{ascending:false}).order('month',{ascending:false}).limit(1);
+  const months=Array.from({length:12},(_,i)=>i+1);
+  const {data:payrollList}=await sb.from('payroll').select('*').eq('employee_id',me.id).order('year',{ascending:false}).order('month',{ascending:false}).limit(12);
   const sal=me.gross_salary||0;
   const pf=Math.round(sal*0.12);
   const tax=me.tax_amount||0;
   const net=sal-pf-tax-200;
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Payslip</h2></div></div>
-  <div class="card" style="max-width:580px;margin:0 auto">
+  <div class="ph"><div><h2>My Payslip</h2></div>
+    <div class="flex gap2">
+      <select class="i" style="width:130px" id="ps-month">${months.map(m=>`<option value="${m}" ${m===now.getMonth()+1?'selected':''}>${new Date(now.getFullYear(),m-1).toLocaleString('default',{month:'long'})}</option>`).join('')}</select>
+      <select class="i" style="width:90px" id="ps-year"><option>${now.getFullYear()}</option><option>${now.getFullYear()-1}</option></select>
+    </div>
+  </div>
+  <div class="card" style="max-width:580px">
     <div class="ct2">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
-        <div><div style="font-size:18px;font-weight:700;color:var(--p)">PeopleCore</div><div style="font-size:12px;color:var(--tm)">Payslip — ${now.toLocaleString('default',{month:'long',year:'numeric'})}</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+        <div><div style="font-size:17px;font-weight:700;color:var(--p)">PeopleCore</div><div style="font-size:12px;color:var(--tm)">${now.toLocaleString('default',{month:'long',year:'numeric'})}</div></div>
         <span class="bx ok">Processed</span>
       </div>
-      <div class="g2 mb4">
-        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;font-weight:700">Name</div><div style="font-weight:600">${me.first_name} ${me.last_name}</div></div>
-        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;font-weight:700">Employee Code</div><div style="font-weight:600">${me.employee_code}</div></div>
-        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;font-weight:700">Department</div><div style="font-weight:600">${me.department||'-'}</div></div>
-        <div><div style="font-size:11px;color:var(--tm);text-transform:uppercase;font-weight:700">Designation</div><div style="font-weight:600">${me.designation||'-'}</div></div>
+      <div class="g2" style="margin-bottom:16px">
+        ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account','HDFC ···· XXXX']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600">${vv}</div></div>`).join('')}
       </div>
       <div class="g2">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--ok);margin-bottom:10px">Earnings</div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--ok);margin-bottom:9px">Earnings</div>
           <div class="payslip-row"><span>Basic (50%)</span><span>₹${Math.round(sal*0.5).toLocaleString('en-IN')}</span></div>
           <div class="payslip-row"><span>HRA (20%)</span><span>₹${Math.round(sal*0.2).toLocaleString('en-IN')}</span></div>
           <div class="payslip-row"><span>Special Allowance</span><span>₹${Math.round(sal*0.2).toLocaleString('en-IN')}</span></div>
           <div class="payslip-row"><span>Transport</span><span>₹${Math.round(sal*0.1).toLocaleString('en-IN')}</span></div>
-          <div class="payslip-row" style="font-weight:700"><span>Gross</span><span>₹${sal.toLocaleString('en-IN')}</span></div>
+          <div class="payslip-row" style="font-weight:700"><span>Gross Pay</span><span>₹${sal.toLocaleString('en-IN')}</span></div>
         </div>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--er);margin-bottom:10px">Deductions</div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--er);margin-bottom:9px">Deductions</div>
           <div class="payslip-row"><span>PF (12%)</span><span>₹${pf.toLocaleString('en-IN')}</span></div>
           <div class="payslip-row"><span>TDS</span><span>₹${tax.toLocaleString('en-IN')}</span></div>
           <div class="payslip-row"><span>Professional Tax</span><span>₹200</span></div>
           <div class="payslip-row" style="font-weight:700"><span>Total</span><span>₹${(pf+tax+200).toLocaleString('en-IN')}</span></div>
         </div>
       </div>
-      <div style="background:var(--p);color:white;border-radius:9px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center">
+      <div style="background:var(--p);color:white;border-radius:9px;padding:13px 17px;margin-top:14px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:14px;font-weight:600">Net Pay</span>
         <span style="font-size:20px;font-weight:700">₹${net.toLocaleString('en-IN')}</span>
       </div>
-      <div style="margin-top:14px;text-align:center">
-        <button class="btn bo" onclick="toast('Payslip downloaded!','ok')"><i class="fas fa-download"></i> Download PDF</button>
+      <div style="text-align:center;margin-top:14px">
+        <button class="btn bo" onclick="toast('Contact HR to download PDF payslip.','')"><i class="fas fa-download"></i> Download PDF</button>
       </div>
     </div>
-  </div>`;
+  </div>
+  ${payrollList&&payrollList.length>1?`<div class="card" style="max-width:580px"><div class="ch"><span class="ctitle">Payslip History</span></div><div class="ct2">
+    ${payrollList.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)">
+      <div style="font-weight:600">${new Date(p.year,p.month-1).toLocaleString('default',{month:'long'})} ${p.year}</div>
+      <div class="flex gap2"><span class="bx ${p.status==='paid'?'ok':p.status==='processed'?'bl':'wa'}">${p.status}</span>
+      <span style="font-weight:700;color:var(--ok)">₹${((p.gross_salary||0)-(p.pf_deduction||0)-(p.tax_deduction||0)-200).toLocaleString('en-IN')}</span></div>
+    </div>`).join('')}
+  </div></div>`:''}`;
 }
 
 // ─── WELLBEING ───
 async function renderWellbeing(){
   const now=new Date();
-  const {data:existing}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).eq('month',now.getMonth()+1).eq('year',now.getFullYear()).single();
+  const {data:existing}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).eq('month',now.getMonth()+1).eq('year',now.getFullYear()).single().catch(()=>({data:null}));
   const {data:history}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).order('year',{ascending:false}).order('month',{ascending:false}).limit(6);
-  const avgScore=existing?.overall_score||0;
+  const score=existing?.overall_score||0;
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Wellbeing Check-in</h2><p>Monthly survey for ${now.toLocaleString('default',{month:'long',year:'numeric'})}</p></div></div>
+  <div class="ph"><div><h2>Wellbeing Check-in</h2><p>${now.toLocaleString('default',{month:'long',year:'numeric'})}</p></div></div>
   <div class="g2">
     <div>
-      ${existing?`<div class="card mb4"><div class="ct2" style="text-align:center;padding:28px">
-        <div style="font-size:44px;font-weight:700;color:${avgScore>=70?'var(--ok)':avgScore>=40?'var(--wa)':'var(--er)'}">${avgScore}</div>
-        <div style="font-size:13px;color:var(--tm);margin-bottom:14px">Your score for ${now.toLocaleString('default',{month:'long'})}</div>
-        <div class="prog"><div class="pb" style="width:${avgScore}%;background:${avgScore>=70?'var(--ok)':avgScore>=40?'var(--wa)':'var(--er)'}"></div></div>
-        <div style="font-size:12px;color:var(--tl);margin-top:10px">Survey submitted ✓</div>
-      </div></div>`:
-      `<div class="card mb4"><div class="ct2" style="text-align:center;padding:22px"><i class="fas fa-clipboard-list" style="font-size:36px;color:var(--tl);margin-bottom:12px;display:block;opacity:.4"></i><div style="font-size:14px;font-weight:600;margin-bottom:6px">Survey pending</div><div style="font-size:13px;color:var(--tm)">Complete your monthly check-in →</div></div></div>`}
-      ${history&&history.length>1?`<div class="card"><div class="ch"><span class="ctitle">Score History</span></div><div class="ct2">
-        ${history.map(h=>`<div class="lb"><div class="lbh"><strong>${h.month}/${h.year}</strong><span>${h.overall_score}/100</span></div><div class="prog"><div class="pb" style="width:${h.overall_score}%;background:${h.overall_score>=70?'var(--ok)':'var(--wa)'}"></div></div></div>`).join('')}
+      <div class="card">
+        <div class="ct2" style="text-align:center;padding:26px">
+          ${existing?`<div style="font-size:42px;font-weight:700;color:${score>=70?'var(--ok)':score>=40?'var(--wa)':'var(--er)'}">${score}</div>
+          <div style="font-size:13px;color:var(--tm);margin-bottom:12px">Your score for ${now.toLocaleString('default',{month:'long'})}</div>
+          <div class="prog"><div class="pb" style="width:${score}%;background:${score>=70?'var(--ok)':score>=40?'var(--wa)':'var(--er)'}"></div></div>
+          <div style="font-size:12px;color:var(--tl);margin-top:10px">✓ Survey submitted for this month</div>`
+          :`<i class="fas fa-clipboard-list" style="font-size:34px;color:var(--tl);display:block;margin-bottom:10px;opacity:.4"></i>
+          <div style="font-size:14px;font-weight:600;margin-bottom:5px">Survey pending</div>
+          <div style="font-size:13px;color:var(--tm)">Complete your monthly check-in →</div>`}
+        </div>
+      </div>
+      ${history&&history.length>0?`<div class="card"><div class="ch"><span class="ctitle">History</span></div><div class="ct2">
+        ${history.map(h=>`<div class="lb"><div class="lbh"><strong>${new Date(h.year,h.month-1).toLocaleString('default',{month:'short'})} ${h.year}</strong><span>${h.overall_score}/100</span></div><div class="prog"><div class="pb" style="width:${h.overall_score}%;background:${h.overall_score>=70?'var(--ok)':'var(--wa)'}"></div></div></div>`).join('')}
       </div></div>`:''}
     </div>
-    <div class="card"><div class="ch"><span class="ctitle">${existing?'Submitted Response':'Monthly Check-in Survey'}</span></div>
-    <div class="ct2">
-      ${existing?`<div style="padding:12px;background:var(--okl);border-radius:8px;text-align:center;color:#065F46;font-size:13px;margin-bottom:16px">✓ You've already submitted this month's survey</div>`:''}
+    <div class="card"><div class="ch"><span class="ctitle">${existing?'Your Response':'Monthly Survey'}</span></div><div class="ct2">
+      ${existing?`<div style="background:var(--okl);color:#065F46;padding:10px 13px;border-radius:7px;font-size:13px;margin-bottom:14px">✓ You have already submitted this month's survey.</div>`:''}
       <div class="well-survey">
-        ${[
-          {id:'q1',q:'How would you rate your overall mood this week?',val:existing?.mood_score},
-          {id:'q2',q:'How manageable is your current workload?',val:existing?.workload_score},
+        ${[{id:'q1',q:'How is your overall mood this week?',val:existing?.mood_score},
+          {id:'q2',q:'How manageable is your workload?',val:existing?.workload_score},
           {id:'q3',q:'How supported do you feel by your team?',val:existing?.team_score},
-          {id:'q4',q:'How satisfied are you with your work-life balance?',val:existing?.balance_score},
-          {id:'q5',q:'How motivated do you feel about your work?',val:existing?.motivation_score},
-        ].map(({id,q,val})=>`
-        <div class="qi"><div class="qt">${q}</div>
-        <div class="rating">${[1,2,3,4,5].map(n=>`<input type="radio" name="${id}" id="${id}r${n}" value="${n}" ${val===n?'checked':''} ${existing?'disabled':''}><label for="${id}r${n}">${n}</label>`).join('')}</div>
-        </div>`).join('')}
+          {id:'q4',q:'How satisfied are you with work-life balance?',val:existing?.balance_score},
+          {id:'q5',q:'How motivated do you feel about your work?',val:existing?.motivation_score}
+        ].map(({id,q,val})=>`<div class="qi"><div class="qt">${q}</div>
+        <div class="rating">${[1,2,3,4,5].map(n=>`<input type="radio" name="${id}" id="${id}r${n}" value="${n}" ${val===n?'checked':''} ${existing?'disabled':''}><label for="${id}r${n}">${n}</label>`).join('')}</div></div>`).join('')}
       </div>
       ${!existing?`<div style="margin-top:14px"><label class="lbl">Additional Comments</label><textarea class="i" id="wc" placeholder="Anything on your mind?"></textarea></div>
-      <button class="btn bp" style="width:100%;margin-top:14px" onclick="submitWellbeing()">Submit Check-in</button>`:''}
+      <button class="btn bp" style="width:100%;margin-top:12px" id="submit-well-btn" onclick="submitWellbeing()"><i class="fas fa-paper-plane"></i> Submit Check-in</button>`:''}
     </div></div>
   </div>`;
 }
 
 async function submitWellbeing(){
-  const get=name=>parseInt(document.querySelector(`input[name="${name}"]:checked`)?.value||0);
+  const get=name=>{const el=document.querySelector(`input[name="${name}"]:checked`);return el?parseInt(el.value):0;};
   const scores={mood_score:get('q1'),workload_score:get('q2'),team_score:get('q3'),balance_score:get('q4'),motivation_score:get('q5')};
   if(Object.values(scores).some(s=>!s)){toast('Please rate all 5 questions','wa');return;}
+  setBtnLoad('submit-well-btn',true,'Submitting…');
   const now=new Date();
   const {error}=await sb.from('wellbeing_surveys').upsert({employee_id:me.id,month:now.getMonth()+1,year:now.getFullYear(),...scores,comments:v('wc')},{onConflict:'employee_id,month,year'});
-  if(error){toast('Error: '+error.message,'er');return;}
-  toast('Wellbeing survey submitted! Thank you 💙','ok');
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('submit-well-btn',false,'Submit Check-in');return;}
+  toast('Thank you for your check-in! 💙','ok');
   nav('wellbeing');
 }
 
@@ -514,10 +526,10 @@ async function renderAnnouncements(){
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>Announcements</h2></div></div>
   ${ann&&ann.length?ann.map(a=>`
-  <div class="card mb4"><div class="ct2">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-      <div><span class="bx pr" style="margin-bottom:6px;display:inline-flex">${a.category}</span><div style="font-size:14px;font-weight:700">${a.title}</div></div>
-      <div style="font-size:11px;color:var(--tl)">${fmtDate(a.created_at.split('T')[0])}</div>
+  <div class="card"><div class="ct2">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px">
+      <div><span class="bx pr" style="margin-bottom:5px;display:inline-flex">${a.category}</span><div style="font-size:14px;font-weight:700">${a.title}</div></div>
+      <div style="font-size:11px;color:var(--tl);white-space:nowrap">${fd(a.created_at.split('T')[0])}</div>
     </div>
     <p style="color:var(--tm);font-size:13px;line-height:1.6">${a.content}</p>
   </div></div>`).join(''):'<div class="empty"><i class="fas fa-bullhorn"></i><div>No announcements yet</div></div>'}`;
@@ -526,25 +538,117 @@ async function renderAnnouncements(){
 // ─── DIRECTORY ───
 async function renderDirectory(){
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Employee Directory</h2><p>${allEmployees.length} team members</p></div></div>
-  <div class="g3">
+  <div class="ph"><div><h2>Employee Directory</h2><p>${allEmployees.length} team members</p></div>
+    <input class="i" style="width:200px" placeholder="Search…" id="dir-search" oninput="filterDir(this.value)">
+  </div>
+  <div class="g3" id="dir-grid">
     ${allEmployees.map(e=>`
-    <div class="card"><div class="ct2" style="text-align:center;padding:20px">
-      <div class="av" style="background:${e.avatar_color||'#4F46E5'};width:50px;height:50px;font-size:16px;margin:0 auto 10px">${ini(e.first_name,e.last_name)}</div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:2px">${e.first_name} ${e.last_name}</div>
-      <div style="font-size:12px;color:var(--tm);margin-bottom:7px">${e.designation||e.department||'-'}</div>
-      <span class="bx gy">${e.department||'-'}</span>
-      <div style="margin-top:10px;font-size:12px;color:var(--tl)">${e.email}</div>
-      ${e.phone?`<div style="font-size:12px;color:var(--tl)">${e.phone}</div>`:''}
-    </div></div>`).join('')}
+    <div class="card dir-card" data-name="${(e.first_name+' '+e.last_name).toLowerCase()}" data-dept="${(e.department||'').toLowerCase()}">
+      <div class="ct2" style="text-align:center;padding:20px">
+        <div class="av" style="background:${e.avatar_color||'#4F46E5'};width:48px;height:48px;font-size:16px;margin:0 auto 10px">${ini(e.first_name,e.last_name)}</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px">${e.first_name} ${e.last_name}</div>
+        <div style="font-size:12px;color:var(--tm);margin-bottom:7px">${e.designation||'-'}</div>
+        <span class="bx gy">${e.department||'-'}</span>
+        <div style="margin-top:9px;font-size:12px;color:var(--tl)">${e.email}</div>
+        ${e.phone?`<div style="font-size:12px;color:var(--tl)">${e.phone}</div>`:''}
+      </div>
+    </div>`).join('')}
   </div>`;
+}
+
+function filterDir(q){
+  document.querySelectorAll('.dir-card').forEach(c=>{
+    c.style.display=(c.dataset.name.includes(q.toLowerCase())||c.dataset.dept.includes(q.toLowerCase()))?'':'none';
+  });
+}
+
+// ─── PROFILE ───
+async function renderProfile(){
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>My Profile</h2></div></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ctitle">Personal Information</span><button class="btn bo bsm" onclick="openEditProfile()"><i class="fas fa-edit"></i> Edit</button></div>
+      <div class="ct2">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
+          <div class="av" style="background:${me.avatar_color||'#4F46E5'};width:54px;height:54px;font-size:18px">${ini(me.first_name,me.last_name)}</div>
+          <div><div style="font-size:16px;font-weight:700">${me.first_name} ${me.last_name}</div>
+          <div style="font-size:13px;color:var(--tm)">${me.designation||''} ${me.department?'· '+me.department:''}</div>
+          <span class="bx ok" style="margin-top:5px;display:inline-flex">${me.status||'active'}</span></div>
+        </div>
+        ${[['Employee Code',me.employee_code],['Email',me.email],['Phone',me.phone||'Not set'],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-']].map(([k,vv])=>`
+        <div class="profile-field"><div class="pf-label">${k}</div><div class="pf-val">${vv}</div></div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="ch"><span class="ctitle">Change Password</span></div>
+        <div class="ct2">
+          <div style="margin-bottom:13px"><label class="lbl">Current Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-old" placeholder="Current password"><span class="pw-eye" onclick="tpw('cp-old',this)">👁</span></div></div>
+          <div style="margin-bottom:13px"><label class="lbl">New Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-new" placeholder="Min 8 characters"><span class="pw-eye" onclick="tpw('cp-new',this)">👁</span></div></div>
+          <div style="margin-bottom:14px"><label class="lbl">Confirm New Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-new2" placeholder="Repeat new password"><span class="pw-eye" onclick="tpw('cp-new2',this)">👁</span></div></div>
+          <button class="btn bp" style="width:100%" id="change-pw-btn" onclick="changePassword()"><i class="fas fa-key"></i> Update Password</button>
+        </div>
+      </div>
+      <div class="card"><div class="ch"><span class="ctitle">My Leave Summary</span></div><div class="ct2">
+        ${myBalances.length?myBalances.map(b=>{
+          const used=b.used_days||0,total=b.total_days||0;
+          return `<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span style="color:${total-used<2?'var(--er)':'var(--tm)'}">${total-used}/${total}</span></div><div class="prog"><div class="pb" style="width:${total>0?Math.max(1,Math.round((used/total)*100)):1}%;background:var(--p)"></div></div></div>`;
+        }).join(''):'<div style="font-size:13px;color:var(--tl)">No balance data.</div>'}
+      </div></div>
+    </div>
+  </div>`;
+}
+
+function openEditProfile(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Edit Profile</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr"><div><label class="lbl">First Name</label><input class="i" id="ep-fn" value="${me.first_name}"></div><div><label class="lbl">Last Name</label><input class="i" id="ep-ln" value="${me.last_name}"></div></div>
+    <div class="fr f1"><div><label class="lbl">Phone</label><input class="i" id="ep-ph" value="${me.phone||''}" placeholder="9876543210"></div></div>
+    <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Email, department, and designation can only be changed by your HR admin.</div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-profile-btn" onclick="saveProfile()">Save</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveProfile(){
+  const fn=v('ep-fn'),ln=v('ep-ln'),ph=v('ep-ph');
+  if(!fn||!ln){toast('Name cannot be empty','wa');return;}
+  setBtnLoad('save-profile-btn',true,'Saving…');
+  const {error}=await sb.from('employees').update({first_name:fn,last_name:ln,phone:ph}).eq('id',me.id);
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('save-profile-btn',false,'Save');return;}
+  me.first_name=fn;me.last_name=ln;me.phone=ph;
+  document.getElementById('sb-name').textContent=fn+' '+ln;
+  setAv('sb-av',fn,ln,me.avatar_color);
+  closeMo();toast('Profile updated!','ok');renderProfile();
+}
+
+async function changePassword(){
+  const oldPw=v('cp-old'),newPw=v('cp-new'),newPw2=v('cp-new2');
+  if(!oldPw||!newPw||!newPw2){toast('Fill all password fields','wa');return;}
+  if(newPw.length<8){toast('New password must be at least 8 characters','wa');return;}
+  if(newPw!==newPw2){toast('New passwords do not match','wa');return;}
+  setBtnLoad('change-pw-btn',true,'Updating…');
+  // Re-authenticate first
+  const {error:signInErr}=await sb.auth.signInWithPassword({email:me.email,password:oldPw});
+  if(signInErr){toast('Current password is incorrect','er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
+  const {error}=await sb.auth.updateUser({password:newPw});
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
+  document.getElementById('cp-old').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-new2').value='';
+  toast('Password changed successfully!','ok');
+  setBtnLoad('change-pw-btn',false,'Update Password');
 }
 
 // ─── HELPERS ───
 function buildCal(){
   const now=new Date();const year=now.getFullYear(),month=now.getMonth();
   const hDates=holidays.filter(h=>{const d=new Date(h.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;}).map(h=>new Date(h.date+'T00:00:00').getDate());
-  const lDates=myLeaves.filter(l=>l.status==='approved').flatMap(l=>{const dates=[];let d=new Date(l.from_date+'T00:00:00');const end=new Date(l.to_date+'T00:00:00');while(d<=end){if(d.getFullYear()===year&&d.getMonth()===month)dates.push(d.getDate());d=new Date(d.getTime()+86400000);}return dates;});
+  const lDates=myLeaves.filter(l=>l.status==='approved').flatMap(l=>{
+    const dates=[];let d=new Date(l.from_date+'T00:00:00');const end=new Date(l.to_date+'T00:00:00');
+    while(d<=end){if(d.getFullYear()===year&&d.getMonth()===month)dates.push(d.getDate());d=new Date(d.getTime()+86400000);}
+    return dates;
+  });
   const first=new Date(year,month,1).getDay();const days=new Date(year,month+1,0).getDate();
   let html=`<div class="cal-grid">`;
   ['S','M','T','W','T','F','S'].forEach(d=>html+=`<div class="cdh">${d}</div>`);
@@ -554,16 +658,19 @@ function buildCal(){
     const dow=new Date(year,month,d).getDay();const isWknd=dow===0||dow===6;
     html+=`<div class="cd${isToday?' today':isLv?' lv':isHol?' hol':isWknd?' wkd':''}">${d}</div>`;
   }
-  return html+'</div><div style="display:flex;gap:12px;margin-top:10px;font-size:11px"><div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;background:var(--p)"></div>Today</div><div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;background:var(--wal);border:1px solid var(--wa)"></div>Leave</div><div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:50%;background:var(--erl);border:1px solid var(--er)"></div>Holiday</div></div>';
+  return html+'</div><div style="display:flex;gap:10px;margin-top:8px;font-size:11px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:4px"><div style="width:9px;height:9px;border-radius:50%;background:var(--p)"></div>Today</div><div style="display:flex;align-items:center;gap:4px"><div style="width:9px;height:9px;border-radius:50%;background:var(--wal)"></div>Leave</div><div style="display:flex;align-items:center;gap:4px"><div style="width:9px;height:9px;border-radius:50%;background:var(--erl)"></div>Holiday</div></div>';
 }
 
 function ini(fn,ln){return((fn||'?')[0]+(ln||'')[0]).toUpperCase();}
-function fmtDate(d){if(!d)return'-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function fd(d){if(!d)return'-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function setAv(id,fn,ln,color){const el=document.getElementById(id);if(el){el.textContent=ini(fn,ln);if(color)el.style.background=color;}}
+function tpw(id,el){const i=document.getElementById(id);if(i){i.type=i.type==='password'?'text':'password';el.textContent=i.type==='password'?'👁':'🙈';}}
 function closeMo(){document.getElementById('mo').classList.remove('op');}
+function setBtnLoad(id,loading,txt){const b=document.getElementById(id);if(b){b.disabled=loading;b.innerHTML=loading?`<i class="fas fa-spinner fa-spin"></i> ${txt}`:txt;}}
 let toastT;
-function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=`show${type?' '+type:''}`;clearTimeout(toastT);toastT=setTimeout(()=>t.className='',3200);}
-async function logout(){await sb.auth.signOut();location.href='index.html';}
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className=`show${type?' '+type:''}`;clearTimeout(toastT);toastT=setTimeout(()=>t.className='',3500);}
+async function logout(){clearInterval(clockTimer);await sb.auth.signOut();location.href='index.html';}
 
 init();
 </script>
