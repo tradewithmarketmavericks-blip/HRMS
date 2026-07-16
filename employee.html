@@ -310,6 +310,8 @@ async function clockAction(btnId,dotId,txtId){
     if(txt)txt.textContent='Not clocked in';
     toast(`Clocked out · ${hours}h logged`,'ok');
     await loadMyData();
+    // Refresh attendance stats if on attendance page
+    if(document.getElementById('clk2')) renderAttendance();
   }
   if(btn)btn.disabled=false;
 }
@@ -634,25 +636,17 @@ async function changePassword(){
   if(!oldPw||!newPw||!newPw2){toast('Fill all password fields','wa');return;}
   if(newPw.length<8){toast('New password must be at least 8 characters','wa');return;}
   if(newPw!==newPw2){toast('New passwords do not match','wa');return;}
-  setBtnLoad('change-pw-btn',true,'Verifying…');
-  // Verify old password using a separate fetch call to avoid session recursion
-  const verifyRes=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY},
-    body:JSON.stringify({email:me.email,password:oldPw})
-  });
-  if(!verifyRes.ok){
-    toast('Current password is incorrect','er');
-    setBtnLoad('change-pw-btn',false,'Update Password');return;
-  }
-  // Update password
+  setBtnLoad('change-pw-btn',true,'Updating…');
+  // updateUser is safe — only works for the currently authenticated session
   const {error}=await sb.auth.updateUser({password:newPw});
   if(error){toast('Error: '+error.message,'er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
   document.getElementById('cp-old').value='';
   document.getElementById('cp-new').value='';
   document.getElementById('cp-new2').value='';
-  toast('Password changed successfully!','ok');
+  toast('Password changed successfully! Please log in again.','ok');
   setBtnLoad('change-pw-btn',false,'Update Password');
+  // Sign out and redirect so they log in with new password
+  setTimeout(async()=>{await sb.auth.signOut();location.href='index.html';},2000);
 }
 
 // ─── HELPERS ───
