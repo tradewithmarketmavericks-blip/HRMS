@@ -199,11 +199,18 @@ async function loadMyData(){
     sb.from('leave_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
     sb.from('leave_balances').select('*').eq('employee_id',me.id).eq('year',now.getFullYear()),
     sb.from('attendance').select('*').eq('employee_id',me.id).order('date',{ascending:false}).limit(30),
-    sb.from('attendance').select('*').eq('employee_id',me.id).eq('date',today).single(),
+    sb.from('attendance').select('*').eq('employee_id',me.id).eq('date',today).maybeSingle(),
   ]);
   myLeaves=l.data||[];myBalances=b.data||[];myAttendance=a.data||[];
   todayAtt=ta.data||null;
-  if(todayAtt?.check_in&&!todayAtt?.check_out){clockedIn=true;clockInTime=new Date(todayAtt.check_in);}
+  // Restore clock state if already clocked in today
+  if(todayAtt?.check_in&&!todayAtt?.check_out){
+    clockedIn=true;
+    clockInTime=new Date(todayAtt.check_in);
+  } else {
+    clockedIn=false;
+    clockInTime=null;
+  }
 }
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
 async function loadAllEmp(){const {data}=await sb.from('employees').select('first_name,last_name,email,phone,department,designation,avatar_color,status').neq('status','inactive').neq('status','terminated');allEmployees=data||[];}
@@ -469,7 +476,7 @@ async function renderPayslip(){
 // ─── WELLBEING ───
 async function renderWellbeing(){
   const now=new Date();
-  const {data:existing}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).eq('month',now.getMonth()+1).eq('year',now.getFullYear()).single().catch(()=>({data:null}));
+  const {data:existing}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).eq('month',now.getMonth()+1).eq('year',now.getFullYear()).maybeSingle();
   const {data:history}=await sb.from('wellbeing_surveys').select('*').eq('employee_id',me.id).order('year',{ascending:false}).order('month',{ascending:false}).limit(6);
   const score=existing?.overall_score||0;
   document.getElementById('ct').innerHTML=`
@@ -627,10 +634,18 @@ async function changePassword(){
   if(!oldPw||!newPw||!newPw2){toast('Fill all password fields','wa');return;}
   if(newPw.length<8){toast('New password must be at least 8 characters','wa');return;}
   if(newPw!==newPw2){toast('New passwords do not match','wa');return;}
-  setBtnLoad('change-pw-btn',true,'Updating…');
-  // Re-authenticate first
-  const {error:signInErr}=await sb.auth.signInWithPassword({email:me.email,password:oldPw});
-  if(signInErr){toast('Current password is incorrect','er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
+  setBtnLoad('change-pw-btn',true,'Verifying…');
+  // Verify old password using a separate fetch call to avoid session recursion
+  const verifyRes=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY},
+    body:JSON.stringify({email:me.email,password:oldPw})
+  });
+  if(!verifyRes.ok){
+    toast('Current password is incorrect','er');
+    setBtnLoad('change-pw-btn',false,'Update Password');return;
+  }
+  // Update password
   const {error}=await sb.auth.updateUser({password:newPw});
   if(error){toast('Error: '+error.message,'er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
   document.getElementById('cp-old').value='';

@@ -450,11 +450,20 @@ async function viewEmp(id){
 }
 
 function confirmDelete(id,name){
-  confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their data. This cannot be undone.`,async()=>{
+  confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their records. This cannot be undone.`,async()=>{
+    // Delete child records first to avoid foreign key constraint errors
+    await sb.from('attendance').delete().eq('employee_id',id);
+    await sb.from('leave_requests').delete().eq('employee_id',id);
+    await sb.from('leave_balances').delete().eq('employee_id',id);
+    await sb.from('payroll').delete().eq('employee_id',id);
+    await sb.from('incentives').delete().eq('employee_id',id);
+    await sb.from('wellbeing_surveys').delete().eq('employee_id',id);
+    await sb.from('documents').delete().eq('employee_id',id);
+    // Now delete the employee record
     const {error}=await sb.from('employees').delete().eq('id',id);
     if(error){toast('Error: '+error.message,'er');return;}
     employees=employees.filter(e=>e.id!==id);
-    toast(`${name} deleted.`,'ok');renderEmployees();
+    toast(`${name} deleted successfully.`,'ok');renderEmployees();
   },'Delete','bd2');
 }
 
@@ -497,7 +506,7 @@ function openAddAttendance(){
   <div class="mh"><span class="mt">Add Attendance Record</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
     <div class="fr f1"><div><label class="lbl">Employee</label><select class="i" id="a-emp"><option value="">Select…</option>${employees.filter(e=>e.status==='active'||e.status==='probation').map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name} (${e.employee_code})</option>`).join('')}</select></div></div>
-    <div class="fr"><div><label class="lbl">Date</label><input class="i" type="date" id="a-dt" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Type</label><select class="i" id="a-tp"><option>Office</option><option>WFH</option><option>Half Day</option></select></div></div>
+    <div class="fr"><div><label class="lbl">Date</label><input class="i" type="date" id="a-dt" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Attendance Type</label><select class="i" id="a-tp"><option value="Office">Office (Full Day)</option><option value="WFH">Work From Home (WFH)</option><option value="Half Day">Half Day</option></select></div></div>
     <div class="fr"><div><label class="lbl">Check In</label><input class="i" type="time" id="a-ci" value="09:00"></div><div><label class="lbl">Check Out</label><input class="i" type="time" id="a-co" value="18:00"></div></div>
     <div class="fr f1"><div><label class="lbl">Status</label><select class="i" id="a-st"><option value="present">Present</option><option value="absent">Absent</option></select></div></div>
   </div>
@@ -572,8 +581,9 @@ async function actLeave(id,status,empId,leaveType,days){
   if(error){toast('Error: '+error.message,'er');return;}
   // Auto-deduct leave balance if approved
   if(status==='approved'&&empId&&leaveType&&days){
-    const {data:bal}=await sb.from('leave_balances').select('*').eq('employee_id',empId).eq('leave_type',leaveType).eq('year',new Date().getFullYear()).single();
-    if(bal){await sb.from('leave_balances').update({used_days:(bal.used_days||0)+days}).eq('id',bal.id);}
+    const daysNum=parseInt(days)||0;
+    const {data:bal}=await sb.from('leave_balances').select('*').eq('employee_id',empId).eq('leave_type',leaveType).eq('year',new Date().getFullYear()).maybeSingle();
+    if(bal&&daysNum>0){await sb.from('leave_balances').update({used_days:(bal.used_days||0)+daysNum}).eq('id',bal.id);}
   }
   const badge=document.getElementById('ls-'+id);
   const actions=document.getElementById('la-'+id);
@@ -697,7 +707,7 @@ async function renderIncentives(){
     <td><span class="bx ${i.status==='paid'?'ok':i.status==='approved'?'bl':'wa'}" id="is-${i.id}">${i.status}</span></td>
     <td class="flex gap2">
       ${i.status!=='paid'?`<button class="btn bg2 bsm" onclick="approveIncentive('${i.id}')"><i class="fas fa-check"></i> Pay</button>`:''}
-      <button class="btn bd2 bsm bic" onclick="confirm2('Delete incentive?','This cannot be undone.',async()=>{await sb.from(\'incentives\').delete().eq(\'id\',\'${i.id}\');toast(\'Deleted\',\'\');renderIncentives();})"><i class="fas fa-trash"></i></button>
+      <button class="btn bd2 bsm bic del-inc-btn" data-id="${i.id}"><i class="fas fa-trash"></i></button>
     </td>
   </tr>`).join(''):'<tr><td colspan="7" class="empty">No incentives yet</td></tr>'}</tbody></table></div></div>`;
 }
@@ -752,7 +762,7 @@ async function renderHolidays(){
         <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
       </div>
       <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
-      <button class="btn bd2 bsm bic" onclick="confirm2('Delete holiday?','Remove ${h.name} from calendar?',async()=>{await sb.from(\'holidays\').delete().eq(\'id\',\'${h.id}\');holidays=holidays.filter(x=>x.id!==\'${h.id}\');toast(\'Removed\',\'\');renderHolidays();})"><i class="fas fa-trash"></i></button>
+      <button class="btn bd2 bsm bic del-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}"><i class="fas fa-trash"></i></button>
     </div>`).join('')}
     </div></div>
   </div>`;
@@ -827,8 +837,8 @@ async function renderDepartments(){
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span class="bx gy">${count} member${count!==1?'s':''}</span>
           <div class="flex gap2">
-            <button class="btn bo bsm" onclick="editDept('${d.id}','${d.name}','${d.head_name||''}')">Edit</button>
-            <button class="btn bd2 bsm bic" onclick="confirm2('Delete ${d.name}?','Employees in this department will not be deleted.',async()=>{await sb.from(\'departments\').delete().eq(\'id\',\'${d.id}\');departments=departments.filter(x=>x.id!==\'${d.id}\');toast(\'Deleted\',\'\');renderDepartments();})"><i class="fas fa-trash"></i></button>
+            <button class="btn bo bsm edit-dept-btn" data-id="${d.id}" data-name="${d.name.replace(/"/g,'&quot;')}" data-head="${(d.head_name||'').replace(/"/g,'&quot;')}">Edit</button>
+            <button class="btn bd2 bsm bic del-dept-btn" data-id="${d.id}" data-name="${d.name.replace(/"/g,'&quot;')}"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div></div>`;}).join('')}
@@ -910,7 +920,7 @@ async function renderAnnouncements(){
         <div><span class="bx pr" style="margin-bottom:5px;display:inline-flex">${a.category}</span><div style="font-size:14px;font-weight:700">${a.title}</div></div>
         <div style="display:flex;align-items:center;gap:8px">
           <div style="font-size:11px;color:var(--tl)">${fd(a.created_at.split('T')[0])}</div>
-          <button class="btn bd2 bsm bic" onclick="confirm2('Delete announcement?','This will remove it for all employees.',async()=>{await sb.from(\'announcements\').delete().eq(\'id\',\'${a.id}\');toast(\'Deleted\',\'\');renderAnnouncements();})"><i class="fas fa-trash"></i></button>
+          <button class="btn bd2 bsm bic del-ann-btn" data-id="${a.id}"><i class="fas fa-trash"></i></button>
         </div>
       </div>
       <p style="color:var(--tm);font-size:13px;line-height:1.6">${a.content}</p>
@@ -1017,6 +1027,51 @@ function confirm2(title,msg,cb,okTxt='Confirm',okCls='bd2'){
 }
 function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('op');confirmCb=null;}
 document.getElementById('confirm-ok').onclick=()=>{closeConfirm();if(confirmCb)confirmCb();};
+
+// ─── SAFE EVENT DELEGATION (avoids inline onclick quote issues) ───
+document.addEventListener('click',async function(e){
+  // Holiday delete
+  const holBtn=e.target.closest('.del-hol-btn');
+  if(holBtn){
+    const id=holBtn.dataset.id,name=holBtn.dataset.name;
+    confirm2('Delete holiday?',`Remove "${name}" from the calendar?`,async()=>{
+      await sb.from('holidays').delete().eq('id',id);
+      holidays=holidays.filter(h=>h.id!==id);
+      toast('Holiday removed','');renderHolidays();
+    });return;
+  }
+  // Incentive delete
+  const incBtn=e.target.closest('.del-inc-btn');
+  if(incBtn){
+    confirm2('Delete incentive?','This record will be permanently removed.',async()=>{
+      await sb.from('incentives').delete().eq('id',incBtn.dataset.id);
+      toast('Deleted','');renderIncentives();
+    });return;
+  }
+  // Department edit
+  const deptEditBtn=e.target.closest('.edit-dept-btn');
+  if(deptEditBtn){
+    editDept(deptEditBtn.dataset.id,deptEditBtn.dataset.name,deptEditBtn.dataset.head);return;
+  }
+  // Department delete
+  const deptDelBtn=e.target.closest('.del-dept-btn');
+  if(deptDelBtn){
+    const id=deptDelBtn.dataset.id,name=deptDelBtn.dataset.name;
+    confirm2(`Delete ${name}?`,'Employees in this department will not be deleted.',async()=>{
+      await sb.from('departments').delete().eq('id',id);
+      departments=departments.filter(d=>d.id!==id);
+      toast('Department deleted','');renderDepartments();
+    });return;
+  }
+  // Announcement delete
+  const annBtn=e.target.closest('.del-ann-btn');
+  if(annBtn){
+    confirm2('Delete announcement?','This will remove it for all employees.',async()=>{
+      await sb.from('announcements').delete().eq('id',annBtn.dataset.id);
+      toast('Deleted','');renderAnnouncements();
+    });return;
+  }
+});
 
 init();
 </script>
