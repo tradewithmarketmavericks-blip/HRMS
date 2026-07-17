@@ -618,29 +618,31 @@ async function saveAttendance(){
 // ─── LEAVES ───
 async function renderLeaves(){
   const {data:leaves}=await sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,employee_code)').order('created_at',{ascending:false});
+  const {data:regs}=await sb.from('regularisation_requests').select('*,employees(first_name,last_name,avatar_color,employee_code)').order('created_at',{ascending:false});
   const pending=leaves?leaves.filter(l=>l.status==='pending').length:0;
   const approved=leaves?leaves.filter(l=>l.status==='approved').length:0;
   const rejected=leaves?leaves.filter(l=>l.status==='rejected').length:0;
+  const pendingRegs=regs?regs.filter(r=>r.status==='pending').length:0;
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>Leave Management</h2></div></div>
   <div class="sg">
-    <div class="sc a"><div class="sl">Pending</div><div class="sv">${pending}</div><div class="ss">Need review</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
+    <div class="sc a"><div class="sl">Pending Leaves</div><div class="sv">${pending}</div><div class="ss">Need review</div><div class="si"><i class="fas fa-hourglass-half"></i></div></div>
     <div class="sc g"><div class="sl">Approved</div><div class="sv">${approved}</div><div class="ss">This period</div><div class="si"><i class="fas fa-check"></i></div></div>
     <div class="sc r"><div class="sl">Rejected</div><div class="sv">${rejected}</div><div class="ss">This period</div><div class="si"><i class="fas fa-times"></i></div></div>
-    <div class="sc b"><div class="sl">Total</div><div class="sv">${leaves?leaves.length:0}</div><div class="ss">All requests</div><div class="si"><i class="fas fa-calendar"></i></div></div>
+    <div class="sc b"><div class="sl">Regularisations</div><div class="sv">${pendingRegs}</div><div class="ss">Pending approval</div><div class="si"><i class="fas fa-clock-rotate-left"></i></div></div>
   </div>
   <div class="card"><div class="ch"><span class="ctitle">All Leave Requests</span>
     <div class="flex gap2">
       <input class="i" style="width:160px" placeholder="Search employee…" id="leave-search" oninput="filterLeaves()">
       <select class="i" style="width:130px" id="leave-status-filter" onchange="filterLeaves()"><option value="">All Status</option><option>pending</option><option>approved</option><option>rejected</option></select>
-      <select class="i" style="width:150px" id="leave-type-filter" onchange="filterLeaves()"><option value="">All Types</option><option>Annual Leave</option><option>Sick Leave</option><option>Casual Leave</option><option>Work From Home</option><option>Comp Off</option><option>Maternity Leave</option><option>Paternity Leave</option></select>
+      <select class="i" style="width:150px" id="leave-type-filter" onchange="filterLeaves()"><option value="">All Types</option><option>Casual Leave</option><option>Sick Leave</option><option>Work From Home</option><option>Comp Off</option><option>LOP</option><option>Maternity Leave</option><option>Paternity Leave</option></select>
     </div>
   </div>
   <div class="tw"><table id="leave-table"><thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
   <tbody>${leaves&&leaves.length?leaves.map(l=>`<tr id="lr-${l.id}" data-status="${l.status}" data-type="${l.leave_type}" data-emp="${(l.employees?.first_name+' '+l.employees?.last_name).toLowerCase()}">
     <td><div class="flex gap2"><div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${ini(l.employees?.first_name,l.employees?.last_name)}</div>
     <div><div style="font-weight:600">${l.employees?.first_name} ${l.employees?.last_name}</div><div style="font-size:11px;color:var(--tm)">${l.employees?.employee_code}</div></div></div></td>
-    <td><span class="bx bl">${l.leave_type}</span></td>
+    <td><span class="bx ${l.leave_type==='LOP'?'er':'bl'}">${l.leave_type}</span></td>
     <td>${fd(l.from_date)}</td><td>${fd(l.to_date)}</td><td>${l.days}</td>
     <td style="max-width:140px;font-size:12px;color:var(--tm)">${l.reason||'-'}</td>
     <td><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}" id="ls-${l.id}">${l.status}</span></td>
@@ -648,7 +650,22 @@ async function renderLeaves(){
       <button class="btn bg2 bsm bic" onclick="actLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days})" title="Approve"><i class="fas fa-check"></i></button>
       <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected','${l.employee_id}','${l.leave_type}',${l.days})" title="Reject"><i class="fas fa-times"></i></button>
     </div>`:'-'}</td>
-  </tr>`).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>`;
+  </tr>`).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>
+  ${regs&&regs.length?`<div class="card"><div class="ch"><span class="ctitle">Regularisation Requests</span><span class="bx wa">${pendingRegs} pending</span></div>
+  <div class="tw"><table><thead><tr><th>Employee</th><th>Date</th><th>Req. Check-In</th><th>Req. Check-Out</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+  <tbody>${regs.map(r=>`<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${r.employees?.avatar_color||'#4F46E5'}">${ini(r.employees?.first_name,r.employees?.last_name)}</div>
+    <div style="font-weight:600">${r.employees?.first_name} ${r.employees?.last_name}<div style="font-size:11px;color:var(--tm)">${r.employees?.employee_code}</div></div></div></td>
+    <td>${fd(r.date)}</td>
+    <td>${r.requested_check_in}</td>
+    <td>${r.requested_check_out}</td>
+    <td style="font-size:12px;color:var(--tm);max-width:140px">${r.reason}</td>
+    <td><span class="bx ${r.status==='approved'?'ok':r.status==='pending'?'wa':'er'}" id="rgs-${r.id}">${r.status}</span></td>
+    <td id="rga-${r.id}">${r.status==='pending'?`<div class="flex gap2">
+      <button class="btn bg2 bsm bic" onclick="actRegularisation('${r.id}','${r.employee_id}','${r.date}','${r.requested_check_in}','${r.requested_check_out}','approved')" title="Approve"><i class="fas fa-check"></i></button>
+      <button class="btn bd2 bsm bic" onclick="actRegularisation('${r.id}','${r.employee_id}','${r.date}','${r.requested_check_in}','${r.requested_check_out}','rejected')" title="Reject"><i class="fas fa-times"></i></button>
+    </div>`:'-'}</td>
+  </tr>`).join('')}</tbody></table></div></div>`:''}`;
   await updateBadge();
 }
 
@@ -678,6 +695,32 @@ async function actLeave(id,status,empId,leaveType,days){
   if(badge){badge.className=`bx ${status==='approved'?'ok':'er'}`;badge.textContent=status;}
   if(actions)actions.innerHTML='-';
   toast(`Leave ${status}!`,status==='approved'?'ok':'');
+  await updateBadge();
+}
+
+async function actRegularisation(id,empId,date,checkIn,checkOut,status){
+  const {error}=await sb.from('regularisation_requests').update({status,approved_by:me.id,approved_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  if(status==='approved'){
+    // Update or create attendance record with the regularised times
+    const ciISO=new Date(date+'T'+checkIn).toISOString();
+    const coISO=new Date(date+'T'+checkOut).toISOString();
+    const hours=Math.round((new Date(coISO)-new Date(ciISO))/3600000*10)/10;
+    const attStatus=hours>=9?'full':'half';
+    await sb.from('attendance').upsert({
+      employee_id:empId,date,
+      check_in:ciISO,check_out:coISO,
+      hours_worked:hours,status:'present',
+      attendance_status:attStatus,type:'Office'
+    },{onConflict:'employee_id,date'});
+    toast('Regularisation approved and attendance updated!','ok');
+  } else {
+    toast('Regularisation rejected.','');
+  }
+  const badge=document.getElementById('rgs-'+id);
+  const actions=document.getElementById('rga-'+id);
+  if(badge){badge.className=`bx ${status==='approved'?'ok':'er'}`;badge.textContent=status;}
+  if(actions)actions.innerHTML='-';
   await updateBadge();
 }
 
@@ -1160,6 +1203,13 @@ async function renderReports(){
     </div></div>
   </div>
   <div class="card"><div class="ch"><span class="ctitle">Download Reports</span></div><div class="ct2">
+    <div style="background:var(--pl);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--p);margin-bottom:10px"><i class="fas fa-file-excel"></i> Bulk Excel Downloads</div>
+      <div class="g2">
+        <button class="btn bp" style="width:100%" onclick="downloadAllEmployeesExcel()"><i class="fas fa-users"></i> All Employee Details (Excel)</button>
+        <button class="btn bp" style="width:100%" onclick="downloadPayslipExcel()"><i class="fas fa-file-invoice-dollar"></i> This Month's Payslips (Excel)</button>
+      </div>
+    </div>
     <div class="g2">${[
       {icon:'fas fa-users',label:'Employee Directory',color:'#4F46E5',fn:'empDir'},
       {icon:'fas fa-fingerprint',label:'Attendance Report',color:'#059669',fn:'attRep'},
@@ -1170,7 +1220,7 @@ async function renderReports(){
     ].map(r=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)">
       <div class="flex gap2"><i class="${r.icon}" style="color:${r.color};width:18px"></i><span>${r.label}</span></div>
-      <button class="btn bo bsm" onclick="${r.fn}()"><i class="fas fa-download"></i> Download</button>
+      <button class="btn bo bsm" onclick="${r.fn}()"><i class="fas fa-download"></i> CSV</button>
     </div>`).join('')}</div>
   </div></div>`;
 }
@@ -1189,6 +1239,55 @@ async function attRep(){const {data}=await sb.from('attendance').select('*,emplo
 async function leaveRep(){const {data}=await sb.from('leave_requests').select('*,employees(first_name,last_name,employee_code)').order('created_at',{ascending:false});dlCSV(['Employee,Code,Leave Type,From,To,Days,Reason,Status',...(data||[]).map(l=>`"${l.employees?.first_name} ${l.employees?.last_name}",${l.employees?.employee_code},${l.leave_type},${l.from_date},${l.to_date},${l.days},"${l.reason||''}",${l.status}`)], 'leave_report.csv');}
 async function incRep(){const {data}=await sb.from('incentives').select('*,employees(first_name,last_name,employee_code)').order('created_at',{ascending:false});dlCSV(['Employee,Code,Type,Amount,Period,Status',...(data||[]).map(i=>`"${i.employees?.first_name} ${i.employees?.last_name}",${i.employees?.employee_code},${i.type},${i.amount},${i.period||''},${i.status}`)], 'incentives_report.csv');}
 function exportCSV(){empDir();}
+
+function dlExcel(data,filename){
+  // Build CSV with BOM for Excel to recognize UTF-8
+  const bom='\uFEFF';
+  const csv=bom+data.map(row=>row.map(cell=>{
+    const s=String(cell??'').replace(/"/g,'""');
+    return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s}"`:s;
+  }).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);
+  toast('Excel file downloaded!','ok');
+}
+
+async function downloadAllEmployeesExcel(){
+  toast('Preparing employee data…','');
+  const rows=[['Employee Code','First Name','Last Name','Email','Phone','Department','Designation','Date of Joining','Gross Salary','Tax Deduction','Role','Status','Weekly Off Day','Bank Name','Account Number','Bank IFSC','PF Number','UAN Number']];
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  employees.forEach(e=>{
+    rows.push([e.employee_code,e.first_name,e.last_name,e.email,e.phone||'',e.department||'',e.designation||'',e.date_of_joining||'',e.gross_salary||0,e.tax_amount||0,e.role||'employee',e.status||'active',days[e.weekly_off_day??0],e.bank_name||'',e.bank_account||'',e.bank_ifsc||'',e.pf_number||'',e.uan_number||'']);
+  });
+  const now=new Date();
+  dlExcel(rows,`employees_${now.getFullYear()}_${String(now.getMonth()+1).padStart(2,'0')}.csv`);
+}
+
+async function downloadPayslipExcel(){
+  toast('Preparing payslip data…','');
+  const now=new Date();
+  const month=now.getMonth()+1;
+  const year=now.getFullYear();
+  const monthName=now.toLocaleString('default',{month:'long'});
+  // Fetch LOP balances for all employees
+  const {data:lopData}=await sb.from('leave_balances').select('employee_id,used_days').eq('leave_type','LOP').eq('year',year);
+  const lopMap={};(lopData||[]).forEach(l=>lopMap[l.employee_id]=l.used_days||0);
+  const rows=[['Employee Code','Name','Department','Designation','Bank Name','Account Number','PF Number','UAN','Gross Salary','Basic (50%)','HRA (20%)','Special Allowance (20%)','Transport (10%)','PF Deduction (12%)','TDS','Professional Tax','LOP Days','LOP Deduction','Total Deductions','Net Pay']];
+  employees.filter(e=>e.status==='active').forEach(e=>{
+    const sal=e.gross_salary||0;
+    const pf=Math.round(sal*0.12);
+    const tax=e.tax_amount||0;
+    const lopDays=lopMap[e.id]||0;
+    const perDay=Math.round(sal/26);
+    const lopDed=lopDays*perDay;
+    const totalDed=pf+tax+200+lopDed;
+    const net=sal-totalDed;
+    rows.push([e.employee_code,`${e.first_name} ${e.last_name}`,e.department||'',e.designation||'',e.bank_name||'',e.bank_account||'',e.pf_number||'',e.uan_number||'',sal,Math.round(sal*0.5),Math.round(sal*0.2),Math.round(sal*0.2),Math.round(sal*0.1),pf,tax,200,lopDays,lopDed,totalDed,net]);
+  });
+  dlExcel(rows,`payslips_${monthName}_${year}.csv`);
+}
 
 // ─── HOLIDAY WORK ───
 async function approveHolidayWork(id,empId,benefitType){
