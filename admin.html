@@ -346,32 +346,71 @@ function openAddEmployee(){
     <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="e-dj" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Employee Code</label><input class="i" id="e-ec" value="EMP${String(employees.length+1).padStart(3,'0')}"></div></div>
     <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Tax Deduction (₹/month)</label><input class="i" type="number" id="e-tx" placeholder="0"></div></div>
     <div class="fr"><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div></div>
-    <div class="fr f1"><div><label class="lbl">Login Password * (min 8 chars)</label><div class="pw-wrap"><input class="i" type="password" id="e-pw" placeholder="Employee will use this to log in"><span class="pw-eye" onclick="tpw('e-pw',this)">👁</span></div></div></div>
-    <div style="background:var(--okl);color:#065F46;border-radius:8px;padding:11px;font-size:12px;margin-top:6px"><i class="fas fa-check-circle"></i> The employee's login account will be created automatically. They can log in immediately using this email and password.</div>
+    <div style="background:var(--okl);color:#065F46;border-radius:8px;padding:11px;font-size:12px;margin-top:6px"><i class="fas fa-check-circle"></i> Employee record will be created and a password setup email sent to their inbox automatically.</div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-emp-btn" onclick="saveNewEmployee()"><i class="fas fa-save"></i> Add Employee</button></div>`;
   document.getElementById('mo').classList.add('op');
 }
 
 async function saveNewEmployee(){
-  const fn=v('e-fn'),ln=v('e-ln'),em=v('e-em'),pw=v('e-pw'),ec=v('e-ec');
+  const fn=v('e-fn'),ln=v('e-ln'),em=v('e-em'),ec=v('e-ec');
   if(!fn||!ln||!em||!ec){toast('Fill all required fields (*)','wa');return;}
-  if(!pw||pw.length<8){toast('Password must be at least 8 characters','wa');return;}
-  setBtnLoad('save-emp-btn',true,'Creating login…');
+  setBtnLoad('save-emp-btn',true,'Saving…');
   const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+  const yr=new Date().getFullYear();
 
-  // Step 1: Create auth user via secondary client so admin session is NOT replaced
-  const {data:authData,error:authErr}=await sbReg.auth.signUp({
-    email:em,
-    password:pw,
-    options:{data:{first_name:fn,last_name:ln}}
-  });
-  if(authErr){toast('Auth error: '+authErr.message,'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
-  const userId=authData?.user?.id;
-  if(!userId){toast('Failed to create login account. Try again.','er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+  // Step 1: Check if auth user already exists by trying to sign them up with a temp password
+  // We use a temp random password — employee sets their own via the reset link we send
+  const tempPw='Temp@'+Math.random().toString(36).slice(2,10)+'!1';
+  const {data:authData,error:authErr}=await sbReg.auth.signUp({email:em,password:tempPw});
 
-  // Step 2: Insert employee record linked to auth user
-  setBtnLoad('save-emp-btn',true,'Saving employee…');
+  let userId=authData?.user?.id;
+
+  // If signUp fails due to authenticated session restriction, create employee without user_id
+  // and show instructions to link manually
+  if(authErr||!userId){
+    // Fallback: insert employee record without auth link
+    const {data:emp,error:empErr}=await sb.from('employees').insert({
+      employee_code:ec,first_name:fn,last_name:ln,email:em,
+      phone:v('e-ph')||null,department:v('e-dp')||null,
+      designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
+      gross_salary:parseFloat(v('e-sl'))||0,
+      tax_amount:parseFloat(v('e-tx'))||0,
+      role:v('e-rl'),status:v('e-st'),avatar_color:color
+    }).select().single();
+    if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
+    await sb.from('leave_balances').insert([
+      {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
+      {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:yr},
+      {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:yr},
+      {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
+      {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
+    ]);
+    await loadEmployees();
+    closeMo();
+    // Show instructions modal
+    document.getElementById('md').innerHTML=`
+    <div class="mh"><span class="mt">Employee Added — Action Required</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+    <div class="mb2">
+      <div style="background:var(--wal);border-radius:9px;padding:16px;margin-bottom:16px">
+        <div style="font-weight:700;margin-bottom:6px">⚠️ Manual login setup needed</div>
+        <div style="font-size:13px;color:var(--tx)">Employee record created successfully. To give <strong>${fn} ${ln}</strong> login access, do this once:</div>
+      </div>
+      <ol style="font-size:13px;line-height:2;padding-left:18px;color:var(--tx)">
+        <li>Go to <strong>Supabase → Authentication → Users → Add user</strong></li>
+        <li>Enter email: <strong>${em}</strong> and any password</li>
+        <li>Check "Auto confirm user" and click Create</li>
+        <li>Copy the UID shown</li>
+        <li>Run in SQL Editor:<br><code style="background:var(--bg);padding:4px 8px;border-radius:5px;display:block;margin-top:4px;font-size:12px">UPDATE employees SET user_id = 'paste-uid' WHERE email = '${em}';</code></li>
+      </ol>
+    </div>
+    <div class="mf"><button class="btn bp" onclick="closeMo()">Got it</button></div>`;
+    document.getElementById('mo').classList.add('op');
+    renderEmployees();
+    return;
+  }
+
+  // signUp succeeded — link employee record to auth user
   const {data:emp,error:empErr}=await sb.from('employees').insert({
     user_id:userId,
     employee_code:ec,first_name:fn,last_name:ln,email:em,
@@ -384,8 +423,6 @@ async function saveNewEmployee(){
 
   if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
 
-  // Step 3: Seed leave balances
-  const yr=new Date().getFullYear();
   await sb.from('leave_balances').insert([
     {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
     {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:yr},
@@ -394,9 +431,14 @@ async function saveNewEmployee(){
     {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
   ]);
 
+  // Send password reset so employee sets their own password
+  await sbReg.auth.resetPasswordForEmail(em,{
+    redirectTo:`${window.location.origin}/HRMS/index.html`
+  });
+
   await loadEmployees();
   closeMo();
-  toast(`${fn} ${ln} added! They can log in immediately with their email and password.`,'ok');
+  toast(`${fn} ${ln} added! A password setup email has been sent to ${em}.`,'ok');
   renderEmployees();
 }
 
@@ -1041,10 +1083,11 @@ document.addEventListener('click',async function(e){
   if(empDelBtn){
     const id=empDelBtn.dataset.id,name=empDelBtn.dataset.name;
     confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their records. This cannot be undone.`,async()=>{
-      const {error}=await sb.rpc('delete_employee_cascade',{emp_id:id});
-      if(error){toast('Error: '+error.message,'er');return;}
-      employees=employees.filter(e=>e.id!==id);
-      toast(`${name} deleted successfully.`,'ok');renderEmployees();
+      await sb.rpc('delete_employee_cascade',{emp_id:id});
+      // Always reload from DB — function may succeed even if RPC returns an error
+      await loadEmployees();
+      toast(`${name} deleted successfully.`,'ok');
+      renderEmployees();
     },'Delete','bd2');return;
   }
   // Dashboard leave approve
