@@ -367,6 +367,7 @@ function openAddEmployee(){
     <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="e-dj" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Employee Code</label><input class="i" id="e-ec" value="EMP${String(employees.length+1).padStart(3,'0')}"></div></div>
     <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Tax Deduction (₹/month)</label><input class="i" type="number" id="e-tx" placeholder="0"></div></div>
     <div class="fr"><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Weekly Off Day</label><select class="i" id="e-wo"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
     <div style="background:var(--okl);color:#065F46;border-radius:8px;padding:11px;font-size:12px;margin-top:6px"><i class="fas fa-check-circle"></i> Employee record will be created and a password setup email sent to their inbox automatically.</div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-emp-btn" onclick="saveNewEmployee()"><i class="fas fa-save"></i> Add Employee</button></div>`;
@@ -397,13 +398,13 @@ async function saveNewEmployee(){
       designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
       gross_salary:parseFloat(v('e-sl'))||0,
       tax_amount:parseFloat(v('e-tx'))||0,
-      role:v('e-rl'),status:v('e-st'),avatar_color:color
+      role:v('e-rl'),status:v('e-st'),avatar_color:color,
+      weekly_off_day:parseInt(v('e-wo'))||0
     }).select().single();
     if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
     await sb.from('leave_balances').insert([
-      {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
-      {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:yr},
-      {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:yr},
+      {employee_id:emp.id,leave_type:'Casual Leave',total_days:12,year:yr},
+      {employee_id:emp.id,leave_type:'Sick Leave',total_days:3,year:yr},
       {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
       {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
     ]);
@@ -439,15 +440,15 @@ async function saveNewEmployee(){
     designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
     gross_salary:parseFloat(v('e-sl'))||0,
     tax_amount:parseFloat(v('e-tx'))||0,
-    role:v('e-rl'),status:v('e-st'),avatar_color:color
+    role:v('e-rl'),status:v('e-st'),avatar_color:color,
+    weekly_off_day:parseInt(v('e-wo'))||0
   }).select().single();
 
   if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
 
   await sb.from('leave_balances').insert([
-    {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
-    {employee_id:emp.id,leave_type:'Sick Leave',total_days:3,year:yr},
     {employee_id:emp.id,leave_type:'Casual Leave',total_days:12,year:yr},
+    {employee_id:emp.id,leave_type:'Sick Leave',total_days:3,year:yr},
     {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
     {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
   ]);
@@ -482,7 +483,10 @@ async function openEditEmployee(id){
       <option value="absconded" ${e.status==='absconded'?'selected':''}>Absconded</option>
       <option value="inactive" ${e.status==='inactive'?'selected':''}>Inactive</option>
     </select></div><div><label class="lbl">Role</label><select class="i" id="ee-rl"><option value="employee" ${e.role==='employee'?'selected':''}>Employee</option><option value="admin" ${e.role==='admin'?'selected':''}>Admin</option></select></div></div>
-    <div class="fr f1"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="ee-dj" value="${e.date_of_joining||''}"></div></div>
+    <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="ee-dj" value="${e.date_of_joining||''}"></div>
+    <div><label class="lbl">Weekly Off Day</label><select class="i" id="ee-wo">
+      ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((d,i)=>`<option value="${i}" ${(e.weekly_off_day??0)===i?'selected':''}>${d}</option>`).join('')}
+    </select></div></div>
     <div style="margin-top:4px;padding:12px;background:#F8FAFC;border-radius:8px;border:1px solid var(--bd)">
       <div style="font-size:12px;font-weight:700;color:var(--tm);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px"><i class="fas fa-building-columns"></i> Bank & PF Details</div>
       <div class="fr"><div><label class="lbl">Bank Name</label><input class="i" id="ee-bn" value="${e.bank_name||''}" placeholder="e.g. HDFC Bank"></div><div><label class="lbl">Account Number</label><input class="i" id="ee-ba" value="${e.bank_account||''}" placeholder="Account number"></div></div>
@@ -505,6 +509,7 @@ async function saveEditEmployee(id){
     department:v('ee-dp'),designation:v('ee-de'),
     gross_salary:parseFloat(v('ee-sl'))||0,tax_amount:parseFloat(v('ee-tx'))||0,
     status:v('ee-st'),role:v('ee-rl'),date_of_joining:v('ee-dj')||null,
+    weekly_off_day:parseInt(v('ee-wo'))||0,
     bank_name:v('ee-bn')||null,bank_account:v('ee-ba')||null,
     bank_ifsc:v('ee-bi')||null,pf_number:v('ee-pf')||null,uan_number:v('ee-uan')||null
   };
@@ -870,8 +875,53 @@ async function renderHolidays(){
         </div>
       </div>`).join('')}
     </div></div>
+  </div>
+  <div class="card" style="margin-top:16px" id="company-offs-card">
+    <div class="ch"><span class="ctitle">Company Off Days</span><button class="btn bp bsm" onclick="openAddCompanyOff()"><i class="fas fa-plus"></i> Declare Company Off</button></div>
+    <div class="ct2" id="company-offs-list"><div class="loading"><i class="fas fa-spinner fa-spin"></i></div></div>
   </div>`;
   renderCalendar();
+  loadCompanyOffs();
+}
+
+let companyOffs=[];
+async function loadCompanyOffs(){
+  const {data}=await sb.from('company_offs').select('*').order('date',{ascending:false});
+  companyOffs=data||[];
+  const el=document.getElementById('company-offs-list');
+  if(!el)return;
+  if(!companyOffs.length){el.innerHTML='<div class="empty"><i class="fas fa-calendar-check"></i>No company off days declared yet</div>';return;}
+  el.innerHTML=companyOffs.map(c=>`
+  <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)">
+    <div style="text-align:center;min-width:40px;background:#EDE9FE;border-radius:7px;padding:4px">
+      <div style="font-size:14px;font-weight:700;color:#5B21B6">${new Date(c.date+'T00:00:00').getDate()}</div>
+      <div style="font-size:9px;color:#5B21B6;text-transform:uppercase">${new Date(c.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
+    </div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600">${c.name}</div><span class="bx pu">Company Off</span></div>
+    <button class="btn bd2 bsm bic del-coff-btn" data-id="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}"><i class="fas fa-trash"></i></button>
+  </div>`).join('');
+}
+
+function openAddCompanyOff(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Declare Company Off Day</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div style="background:var(--pl);color:var(--pd);border-radius:8px;padding:11px;font-size:12px;margin-bottom:14px"><i class="fas fa-info-circle"></i> Company off days apply to all employees. If any employee clocks in on this day, they will automatically receive a Comp Off.</div>
+    <div class="fr f1"><div><label class="lbl">Reason / Name</label><input class="i" id="co-nm" placeholder="e.g. Foundation Day, Team Outing"></div></div>
+    <div class="fr f1"><div><label class="lbl">Date</label><input class="i" type="date" id="co-dt"></div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-co-btn" onclick="saveCompanyOff()">Declare</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveCompanyOff(){
+  const name=v('co-nm'),date=v('co-dt');
+  if(!name||!date){toast('Fill name and date','wa');return;}
+  setBtnLoad('save-co-btn',true,'Saving…');
+  const {data,error}=await sb.from('company_offs').insert({name,date,created_by:me.id}).select().single();
+  if(error){toast(error.code==='23505'?'A company off already exists on this date':'Error: '+error.message,'er');setBtnLoad('save-co-btn',false,'Declare');return;}
+  closeMo();toast('Company off declared! All employees notified.','ok');
+  loadCompanyOffs();
 }
 
 function renderCalendar(){
@@ -1219,6 +1269,14 @@ document.addEventListener('click',async function(e){
   if(rejBtn){
     await actLeave(rejBtn.dataset.id,'rejected',rejBtn.dataset.empid,rejBtn.dataset.type,rejBtn.dataset.days);
     renderDashboard();return;
+  }
+  // Company off delete
+  const coffBtn=e.target.closest('.del-coff-btn');
+  if(coffBtn){
+    confirm2('Remove company off?',`Remove "${coffBtn.dataset.name}" from company off days?`,async()=>{
+      await sb.from('company_offs').delete().eq('id',coffBtn.dataset.id);
+      toast('Removed','');loadCompanyOffs();
+    });return;
   }
   // Holiday edit
   const holEditBtn=e.target.closest('.edit-hol-btn');

@@ -176,7 +176,7 @@ tr:last-child td{border-bottom:none}
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],myAttendance=[],myHolidayWork=[],clockedIn=false,clockInTime=null,clockTimer=null,todayAtt=null;
+let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],companyOffs=[],myAttendance=[],myHolidayWork=[],clockedIn=false,clockInTime=null,clockTimer=null,todayAtt=null;
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -188,7 +188,7 @@ async function init(){
   setAv('sb-av',me.first_name,me.last_name,me.avatar_color);
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
   document.getElementById('sb-role').textContent=me.designation||me.department||'Employee';
-  await Promise.all([loadMyData(),loadHolidays(),loadAllEmp()]);
+  await Promise.all([loadMyData(),loadHolidays(),loadAllEmp(),loadCompanyOffs()]);
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>nav(el.dataset.pg));
   nav('dashboard');
 }
@@ -212,6 +212,7 @@ async function loadMyData(){
   }
 }
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
+async function loadCompanyOffs(){const {data}=await sb.from('company_offs').select('*').order('date');companyOffs=data||[];}
 async function loadAllEmp(){const {data}=await sb.from('employees').select('first_name,last_name,email,phone,department,designation,avatar_color,status').neq('status','inactive').neq('status','terminated');allEmployees=data||[];}
 
 function nav(pg){
@@ -284,10 +285,18 @@ function startClock(){
 
 async function clockAction(btnId,dotId,txtId){
   const today=new Date().toISOString().split('T')[0];
+  const todayDow=new Date().getDay(); // 0=Sun, 1=Mon...
   const btn=document.getElementById(btnId);
   const dot=document.getElementById(dotId);
   const txt=document.getElementById(txtId);
   if(btn)btn.disabled=true;
+
+  // Check if today is employee's weekly off or a company off
+  const isWeeklyOff=me.weekly_off_day!==undefined&&me.weekly_off_day!==null&&todayDow===me.weekly_off_day;
+  const todayHoliday=holidays.find(h=>h.date===today);
+  const compOff=companyOffs.find(c=>c.date===today);
+  const isSpecialDay=isWeeklyOff||todayHoliday||compOff;
+  const specialDayName=isWeeklyOff?'your weekly off day':todayHoliday?todayHoliday.name:compOff?.name;
 
   if(!clockedIn){
     const now=new Date();
@@ -297,10 +306,8 @@ async function clockAction(btnId,dotId,txtId){
     if(btn){btn.textContent='Clock Out';btn.className='cbtn cbtn-out';}
     if(dot)dot.style.background='#F59E0B';
     if(txt)txt.textContent='Clocked in at '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    // Warn if today is a holiday
-    const todayHoliday=holidays.find(h=>h.date===today);
-    if(todayHoliday){
-      toast(`⚠️ Today is ${todayHoliday.name} — a holiday! Your work will be logged automatically.`,'wa');
+    if(isSpecialDay){
+      toast(`⚠️ Today is ${specialDayName}. Your work will be auto-logged for Comp Off.`,'wa');
     } else {
       toast('Clocked in!','ok');
     }
@@ -314,35 +321,30 @@ async function clockAction(btnId,dotId,txtId){
     if(dot)dot.style.background='#34D399';
     if(txt)txt.textContent='Not clocked in';
 
-    // Auto-detect if today is a holiday and create request automatically
-    const todayHoliday=holidays.find(h=>h.date===today);
-    if(todayHoliday){
-      // Check if already submitted for this holiday
-      const alreadySubmitted=myHolidayWork.find(h=>h.holiday_id===todayHoliday.id);
+    // Auto-create comp off request if worked on weekly off, holiday or company off
+    if(isSpecialDay){
+      const alreadySubmitted=myHolidayWork.find(h=>h.holiday_date===today);
       if(!alreadySubmitted){
-        const {error:hwErr}=await sb.from('holiday_work_requests').insert({
+        const holId=todayHoliday?.id||null;
+        await sb.from('holiday_work_requests').insert({
           employee_id:me.id,
-          holiday_id:todayHoliday.id,
+          holiday_id:holId,
           holiday_date:today,
-          holiday_name:todayHoliday.name,
+          holiday_name:specialDayName,
           hours_worked:hours,
-          reason:'Auto-detected from attendance clock-out',
+          reason:isWeeklyOff?'Worked on weekly off day':compOff?'Worked on company off day':'Auto-detected from attendance',
+          benefit_type:'comp_off',
           status:'pending'
         });
-        if(!hwErr){
-          toast(`Clocked out · ${hours}h logged. Holiday work request auto-submitted for ${todayHoliday.name}. Admin will decide Comp Off or Double Pay.`,'ok');
-        } else {
-          toast(`Clocked out · ${hours}h logged.`,'ok');
-        }
+        toast(`Clocked out · ${hours}h logged · Comp Off request auto-submitted for working on ${specialDayName}.`,'ok');
       } else {
         toast(`Clocked out · ${hours}h logged.`,'ok');
       }
     } else {
       toast(`Clocked out · ${hours}h logged`,'ok');
     }
-
     await loadMyData();
-    if(document.getElementById('clk2')) renderAttendance();
+    if(document.getElementById('clk2'))renderAttendance();
   }
   if(btn)btn.disabled=false;
 }
@@ -673,7 +675,7 @@ async function renderProfile(){
           <div style="font-size:13px;color:var(--tm)">${me.designation||''} ${me.department?'· '+me.department:''}</div>
           <span class="bx ok" style="margin-top:5px;display:inline-flex">${me.status||'active'}</span></div>
         </div>
-        ${[['Employee Code',me.employee_code],['Email',me.email],['Phone',me.phone||'Not set'],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' ···· '+me.bank_account.slice(-4):'')):'Not set'],['PF Number',me.pf_number||'Not set'],['UAN Number',me.uan_number||'Not set']].map(([k,vv])=>`
+        ${[['Employee Code',me.employee_code],['Email',me.email],['Phone',me.phone||'Not set'],['Department',me.department||'-'],['Designation',me.designation||'-'],['Weekly Off Day',['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][me.weekly_off_day??0]],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' ···· '+me.bank_account.slice(-4):'')):'Not set'],['PF Number',me.pf_number||'Not set'],['UAN Number',me.uan_number||'Not set']].map(([k,vv])=>`
         <div class="profile-field"><div class="pf-label">${k}</div><div class="pf-val">${vv}</div></div>`).join('')}
         <div style="margin-top:12px;font-size:12px;color:var(--tl);background:var(--bg);padding:10px;border-radius:7px"><i class="fas fa-info-circle"></i> To update your details, contact your HR admin.</div>
       </div>
