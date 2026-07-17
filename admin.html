@@ -223,9 +223,13 @@ async function loadEmployees(){const {data}=await sb.from('employees').select('*
 async function loadDepartments(){const {data}=await sb.from('departments').select('*').order('name');departments=data||[];}
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
 async function updateBadge(){
-  const {count}=await sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending');
+  const [{count:lc},{count:hwc}]=await Promise.all([
+    sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+    sb.from('holiday_work_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+  ]);
   const el=document.getElementById('leave-badge');
-  if(el){el.textContent=count||0;el.style.display=(count&&count>0)?'inline':'none';}
+  const total=(lc||0)+(hwc||0);
+  if(el){el.textContent=total;el.style.display=total>0?'inline':'none';}
 }
 
 function navigate(pg){
@@ -239,12 +243,13 @@ function navigate(pg){
 // ─── DASHBOARD ───
 async function renderDashboard(){
   const today=new Date().toISOString().split('T')[0];
-  const [pendingLeaves,presentToday,recentLeaves,upcoming,anns]=await Promise.all([
+  const [pendingLeaves,presentToday,recentLeaves,upcoming,anns,hwRequests]=await Promise.all([
     sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
     sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('status','present'),
     sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,department)').eq('status','pending').limit(5).order('created_at',{ascending:false}),
     Promise.resolve(holidays.filter(h=>h.date>=today).slice(0,5)),
     sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(3),
+    sb.from('holiday_work_requests').select('*,employees(first_name,last_name,avatar_color)').eq('status','pending').order('created_at',{ascending:false}),
   ]);
   const active=employees.filter(e=>e.status==='active').length;
   document.getElementById('ct').innerHTML=`
@@ -254,20 +259,36 @@ async function renderDashboard(){
     <div class="sc b"><div class="sl">Total Employees</div><div class="sv">${active}</div><div class="ss">${employees.length} total incl. inactive</div><div class="si"><i class="fas fa-users"></i></div></div>
     <div class="sc g"><div class="sl">Present Today</div><div class="sv">${presentToday.count||0}</div><div class="ss">Clocked in</div><div class="si"><i class="fas fa-circle-check"></i></div></div>
     <div class="sc a"><div class="sl">Pending Leaves</div><div class="sv">${pendingLeaves.count||0}</div><div class="ss">Need approval</div><div class="si"><i class="fas fa-clock"></i></div></div>
-    <div class="sc r"><div class="sl">Departments</div><div class="sv">${departments.length}</div><div class="ss">Teams</div><div class="si"><i class="fas fa-sitemap"></i></div></div>
+    <div class="sc r"><div class="sl">Holiday Work</div><div class="sv">${hwRequests.data?.length||0}</div><div class="ss">Pending decisions</div><div class="si"><i class="fas fa-calendar-xmark"></i></div></div>
   </div>
   <div class="g2">
-    <div class="card"><div class="ch"><span class="ctitle">Pending Leave Requests</span></div><div class="ct2">
-      ${recentLeaves.data&&recentLeaves.data.length?recentLeaves.data.map(l=>`
-      <div class="ri"><div class="flex gap2">
-        <div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${ini(l.employees?.first_name,l.employees?.last_name)}</div>
-        <div><div style="font-weight:600;font-size:13px">${l.employees?.first_name} ${l.employees?.last_name}</div>
-        <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fd(l.from_date)}</div></div></div>
-        <div class="flex gap2">
-          <button class="btn bg2 bsm bic apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Approve"><i class="fas fa-check"></i></button>
-          <button class="btn bd2 bsm bic rej-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Reject"><i class="fas fa-times"></i></button>
-        </div></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending requests</div>'}
-    </div></div>
+    <div>
+      <div class="card" style="margin-bottom:16px"><div class="ch"><span class="ctitle">Pending Leave Requests</span></div><div class="ct2">
+        ${recentLeaves.data&&recentLeaves.data.length?recentLeaves.data.map(l=>`
+        <div class="ri"><div class="flex gap2">
+          <div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${ini(l.employees?.first_name,l.employees?.last_name)}</div>
+          <div><div style="font-weight:600;font-size:13px">${l.employees?.first_name} ${l.employees?.last_name}</div>
+          <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fd(l.from_date)}</div></div></div>
+          <div class="flex gap2">
+            <button class="btn bg2 bsm bic apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Approve"><i class="fas fa-check"></i></button>
+            <button class="btn bd2 bsm bic rej-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Reject"><i class="fas fa-times"></i></button>
+          </div></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending leave requests</div>'}
+      </div></div>
+      <div class="card"><div class="ch"><span class="ctitle">Holiday Work Requests</span><span class="bx wa">${hwRequests.data?.length||0} pending</span></div><div class="ct2">
+        ${hwRequests.data&&hwRequests.data.length?hwRequests.data.map(h=>`
+        <div class="ri"><div class="flex gap2">
+          <div class="av32" style="background:${h.employees?.avatar_color||'#4F46E5'}">${ini(h.employees?.first_name,h.employees?.last_name)}</div>
+          <div><div style="font-weight:600;font-size:13px">${h.employees?.first_name} ${h.employees?.last_name}</div>
+          <div style="font-size:12px;color:var(--tm)">${h.holiday_name} · ${fd(h.holiday_date)} · ${h.hours_worked}h worked</div>
+          ${h.reason?`<div style="font-size:11px;color:var(--tl)">${h.reason}</div>`:''}
+          </div></div>
+          <div class="flex gap2">
+            <button class="btn bg2 bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','comp_off')" title="Grant Comp Off"><i class="fas fa-arrows-rotate"></i> Comp Off</button>
+            <button class="btn bp bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','double_pay')" title="Grant Double Pay"><i class="fas fa-money-bill"></i> 2x Pay</button>
+            <button class="btn bd2 bsm bic" onclick="rejectHolidayWork('${h.id}')" title="Reject"><i class="fas fa-times"></i></button>
+          </div></div>`).join(''):'<div class="empty"><i class="fas fa-umbrella-beach"></i>No holiday work requests</div>'}
+      </div></div>
+    </div>
     <div class="card"><div class="ch"><span class="ctitle">Upcoming Holidays</span></div><div class="ct2">
       ${upcoming.map(h=>`
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
@@ -275,7 +296,7 @@ async function renderDashboard(){
           <div style="font-size:15px;font-weight:700;color:var(--p)">${new Date(h.date+'T00:00:00').getDate()}</div>
           <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
         </div>
-        <div><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
+        <div><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':h.type==='Optional'?'gy':'pu'}">${h.type}</span></div>
       </div>`).join('')||'<div class="empty">No upcoming holidays</div>'}
     </div></div>
   </div>
@@ -425,8 +446,8 @@ async function saveNewEmployee(){
 
   await sb.from('leave_balances').insert([
     {employee_id:emp.id,leave_type:'Annual Leave',total_days:20,year:yr},
-    {employee_id:emp.id,leave_type:'Sick Leave',total_days:10,year:yr},
-    {employee_id:emp.id,leave_type:'Casual Leave',total_days:7,year:yr},
+    {employee_id:emp.id,leave_type:'Sick Leave',total_days:3,year:yr},
+    {employee_id:emp.id,leave_type:'Casual Leave',total_days:12,year:yr},
     {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
     {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
   ]);
@@ -462,10 +483,16 @@ async function openEditEmployee(id){
       <option value="inactive" ${e.status==='inactive'?'selected':''}>Inactive</option>
     </select></div><div><label class="lbl">Role</label><select class="i" id="ee-rl"><option value="employee" ${e.role==='employee'?'selected':''}>Employee</option><option value="admin" ${e.role==='admin'?'selected':''}>Admin</option></select></div></div>
     <div class="fr f1"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="ee-dj" value="${e.date_of_joining||''}"></div></div>
-    <div style="margin-top:4px;padding:12px;background:var(--pl);border-radius:8px">
+    <div style="margin-top:4px;padding:12px;background:#F8FAFC;border-radius:8px;border:1px solid var(--bd)">
+      <div style="font-size:12px;font-weight:700;color:var(--tm);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px"><i class="fas fa-building-columns"></i> Bank & PF Details</div>
+      <div class="fr"><div><label class="lbl">Bank Name</label><input class="i" id="ee-bn" value="${e.bank_name||''}" placeholder="e.g. HDFC Bank"></div><div><label class="lbl">Account Number</label><input class="i" id="ee-ba" value="${e.bank_account||''}" placeholder="Account number"></div></div>
+      <div class="fr"><div><label class="lbl">IFSC Code</label><input class="i" id="ee-bi" value="${e.bank_ifsc||''}" placeholder="e.g. HDFC0001234"></div><div><label class="lbl">PF Number</label><input class="i" id="ee-pf" value="${e.pf_number||''}" placeholder="PF account number"></div></div>
+      <div class="fr f1"><div><label class="lbl">UAN Number</label><input class="i" id="ee-uan" value="${e.uan_number||''}" placeholder="Universal Account Number"></div></div>
+    </div>
+    <div style="margin-top:10px;padding:12px;background:var(--pl);border-radius:8px">
       <div style="font-size:12px;font-weight:700;color:var(--p);margin-bottom:8px"><i class="fas fa-key"></i> Reset Login Password</div>
       <div class="pw-wrap"><input class="i" type="password" id="ee-pw" placeholder="Leave blank to keep current password"><span class="pw-eye" onclick="tpw('ee-pw',this)">👁</span></div>
-      <div style="font-size:11px;color:var(--tm);margin-top:5px">Enter a new password to reset this employee's login. You'll need to manually update it in Supabase Auth too.</div>
+      <div style="font-size:11px;color:var(--tm);margin-top:5px">Enter a new password to reset this employee's login. You'll need to update it in Supabase Auth → Users too.</div>
     </div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="upd-emp-btn" onclick="saveEditEmployee('${id}')"><i class="fas fa-save"></i> Save Changes</button></div>`;
@@ -473,14 +500,21 @@ async function openEditEmployee(id){
 }
 
 async function saveEditEmployee(id){
-  const updates={first_name:v('ee-fn'),last_name:v('ee-ln'),email:v('ee-em'),phone:v('ee-ph'),department:v('ee-dp'),designation:v('ee-de'),gross_salary:parseFloat(v('ee-sl'))||0,tax_amount:parseFloat(v('ee-tx'))||0,status:v('ee-st'),role:v('ee-rl'),date_of_joining:v('ee-dj')||null};
+  const updates={
+    first_name:v('ee-fn'),last_name:v('ee-ln'),email:v('ee-em'),phone:v('ee-ph'),
+    department:v('ee-dp'),designation:v('ee-de'),
+    gross_salary:parseFloat(v('ee-sl'))||0,tax_amount:parseFloat(v('ee-tx'))||0,
+    status:v('ee-st'),role:v('ee-rl'),date_of_joining:v('ee-dj')||null,
+    bank_name:v('ee-bn')||null,bank_account:v('ee-ba')||null,
+    bank_ifsc:v('ee-bi')||null,pf_number:v('ee-pf')||null,uan_number:v('ee-uan')||null
+  };
   setBtnLoad('upd-emp-btn',true,'Saving…');
   const {error}=await sb.from('employees').update(updates).eq('id',id);
   if(error){toast('Error: '+error.message,'er');setBtnLoad('upd-emp-btn',false,'Save Changes');return;}
   const idx=employees.findIndex(x=>x.id===id);
   if(idx>-1)employees[idx]={...employees[idx],...updates};
   const newPw=v('ee-pw');
-  if(newPw&&newPw.length>=8){toast('Employee record updated. Update password in Supabase Auth manually.','wa');}
+  if(newPw&&newPw.length>=8){toast('Employee updated. Remember to update password in Supabase Auth → Users.','wa');}
   else{toast('Employee updated!','ok');}
   closeMo();renderEmployees();
 }
@@ -792,9 +826,14 @@ async function approveIncentive(id){
 
 // ─── HOLIDAYS ───
 async function renderHolidays(){
+  const compulsory=holidays.filter(h=>h.type!=='Optional');
+  const optional=holidays.filter(h=>h.type==='Optional');
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Holiday Calendar</h2></div>
+  <div class="ph"><div><h2>Holiday Calendar</h2><p>Update dates each year for lunar/variable holidays</p></div>
     <button class="btn bp" onclick="openAddHoliday()"><i class="fas fa-plus"></i> Add Holiday</button></div>
+  <div style="background:var(--wal);color:#92400E;border-radius:8px;padding:11px 14px;font-size:13px;margin-bottom:16px">
+    <i class="fas fa-triangle-exclamation"></i> <strong>Yearly reminder:</strong> Festivals like Eid, Holi, Diwali change dates every year. Click <i class="fas fa-edit"></i> Edit on each holiday at the start of the year to update the date.
+  </div>
   <div class="g2">
     <div class="card"><div class="ch">
       <div class="cal-nav">
@@ -803,16 +842,33 @@ async function renderHolidays(){
         <button onclick="changeCalMonth(1)"><i class="fas fa-chevron-right"></i></button>
       </div>
     </div><div class="ct2" id="cal-body"></div></div>
-    <div class="card"><div class="ch"><span class="ctitle">All Holidays ${calYear}</span></div>
-    <div class="ct2">${holidays.filter(h=>new Date(h.date+'T00:00:00').getFullYear()===calYear).map(h=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
-      <div style="text-align:center;min-width:40px;background:var(--pl);border-radius:7px;padding:4px">
-        <div style="font-size:14px;font-weight:700;color:var(--p)">${new Date(h.date+'T00:00:00').getDate()}</div>
-        <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
-      </div>
-      <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
-      <button class="btn bd2 bsm bic del-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}"><i class="fas fa-trash"></i></button>
-    </div>`).join('')}
+    <div class="card"><div class="ch"><span class="ctitle">Compulsory Holidays (${compulsory.length})</span></div>
+    <div class="ct2">
+      ${compulsory.map(h=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <div style="text-align:center;min-width:40px;background:var(--pl);border-radius:7px;padding:4px">
+          <div style="font-size:14px;font-weight:700;color:var(--p)">${new Date(h.date+'T00:00:00').getDate()}</div>
+          <div style="font-size:9px;color:var(--p);text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
+        </div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx ${h.type==='National'?'pr':'pu'}">${h.type}</span></div>
+        <div class="flex gap2">
+          <button class="btn bo bsm bic edit-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}" data-date="${h.date}" data-type="${h.type}" title="Edit date"><i class="fas fa-edit"></i></button>
+          <button class="btn bd2 bsm bic del-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}" title="Delete"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`).join('')}
+      <div style="margin-top:14px;font-size:12px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Optional Holidays — Employee picks any 4 of 5</div>
+      ${optional.map(h=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <div style="text-align:center;min-width:40px;background:var(--wal);border-radius:7px;padding:4px">
+          <div style="font-size:14px;font-weight:700;color:#92400E">${new Date(h.date+'T00:00:00').getDate()}</div>
+          <div style="font-size:9px;color:#92400E;text-transform:uppercase">${new Date(h.date+'T00:00:00').toLocaleString('default',{month:'short'})}</div>
+        </div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx wa">Optional</span></div>
+        <div class="flex gap2">
+          <button class="btn bo bsm bic edit-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}" data-date="${h.date}" data-type="${h.type}" title="Edit date"><i class="fas fa-edit"></i></button>
+          <button class="btn bd2 bsm bic del-hol-btn" data-id="${h.id}" data-name="${h.name.replace(/"/g,'&quot;')}" title="Delete"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`).join('')}
     </div></div>
   </div>`;
   renderCalendar();
@@ -868,6 +924,39 @@ async function saveHoliday(){
   if(error){toast(error.code==='23505'?'Holiday on this date already exists':'Error: '+error.message,'er');setBtnLoad('save-hol-btn',false,'Add');return;}
   holidays.push(data);holidays.sort((a,b)=>a.date.localeCompare(b.date));
   closeMo();toast('Holiday added!','ok');renderHolidays();
+}
+
+function editHoliday(id,name,date,type){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Edit Holiday</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div style="background:var(--wal);color:#92400E;border-radius:8px;padding:11px;font-size:12px;margin-bottom:14px">
+      <i class="fas fa-calendar"></i> Update the date when the new year's calendar is announced. The name and type rarely change.
+    </div>
+    <div class="fr f1"><div><label class="lbl">Holiday Name</label><input class="i" id="eh-nm" value="${name}"></div></div>
+    <div class="fr"><div><label class="lbl">Date</label><input class="i" type="date" id="eh-dt" value="${date}"></div>
+      <div><label class="lbl">Type</label><select class="i" id="eh-tp">
+        <option ${type==='National'?'selected':''}>National</option>
+        <option ${type==='Festival'?'selected':''}>Festival</option>
+        <option ${type==='Optional'?'selected':''}>Optional</option>
+        <option ${type==='Company'?'selected':''}>Company</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="upd-hol-btn" onclick="saveHolidayEdit('${id}')">Save Changes</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveHolidayEdit(id){
+  const name=v('eh-nm'),date=v('eh-dt'),type=v('eh-tp');
+  if(!name||!date){toast('Fill name and date','wa');return;}
+  setBtnLoad('upd-hol-btn',true,'Saving…');
+  const {error}=await sb.from('holidays').update({name,date,type}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('upd-hol-btn',false,'Save Changes');return;}
+  const idx=holidays.findIndex(h=>h.id===id);
+  if(idx>-1)holidays[idx]={...holidays[idx],name,date,type};
+  holidays.sort((a,b)=>a.date.localeCompare(b.date));
+  closeMo();toast('Holiday updated!','ok');renderHolidays();
 }
 
 // ─── DEPARTMENTS ───
@@ -1051,6 +1140,34 @@ async function leaveRep(){const {data}=await sb.from('leave_requests').select('*
 async function incRep(){const {data}=await sb.from('incentives').select('*,employees(first_name,last_name,employee_code)').order('created_at',{ascending:false});dlCSV(['Employee,Code,Type,Amount,Period,Status',...(data||[]).map(i=>`"${i.employees?.first_name} ${i.employees?.last_name}",${i.employees?.employee_code},${i.type},${i.amount},${i.period||''},${i.status}`)], 'incentives_report.csv');}
 function exportCSV(){empDir();}
 
+// ─── HOLIDAY WORK ───
+async function approveHolidayWork(id,empId,benefitType){
+  const {error}=await sb.from('holiday_work_requests').update({
+    status:benefitType==='comp_off'?'approved_comp':'approved_pay',
+    benefit_type:benefitType,
+    approved_by:me.id,
+    approved_at:new Date().toISOString()
+  }).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  if(benefitType==='comp_off'){
+    // Add 1 comp off day to employee's balance
+    const {data:bal}=await sb.from('leave_balances').select('*').eq('employee_id',empId).eq('leave_type','Comp Off').eq('year',new Date().getFullYear()).maybeSingle();
+    if(bal){await sb.from('leave_balances').update({total_days:(bal.total_days||0)+1}).eq('id',bal.id);}
+    else{await sb.from('leave_balances').insert({employee_id:empId,leave_type:'Comp Off',total_days:1,used_days:0,year:new Date().getFullYear()});}
+    toast('Comp off granted! Employee balance updated.','ok');
+  } else {
+    toast('Double pay approved! Add to payslip when processing payroll.','ok');
+  }
+  renderDashboard();
+}
+
+async function rejectHolidayWork(id){
+  const {error}=await sb.from('holiday_work_requests').update({status:'rejected',approved_by:me.id,approved_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  toast('Holiday work request rejected.','');
+  renderDashboard();
+}
+
 // ─── HELPERS ───
 function ini(fn,ln){return((fn||'?')[0]+(ln||'')[0]).toUpperCase();}
 function fd(d){if(!d)return'-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
@@ -1102,6 +1219,11 @@ document.addEventListener('click',async function(e){
   if(rejBtn){
     await actLeave(rejBtn.dataset.id,'rejected',rejBtn.dataset.empid,rejBtn.dataset.type,rejBtn.dataset.days);
     renderDashboard();return;
+  }
+  // Holiday edit
+  const holEditBtn=e.target.closest('.edit-hol-btn');
+  if(holEditBtn){
+    editHoliday(holEditBtn.dataset.id,holEditBtn.dataset.name,holEditBtn.dataset.date,holEditBtn.dataset.type);return;
   }
   // Holiday delete
   const holBtn=e.target.closest('.del-hol-btn');

@@ -148,6 +148,7 @@ tr:last-child td{border-bottom:none}
       <div class="ni" data-pg="leaves"><i class="fas fa-umbrella-beach"></i>My Leaves</div>
       <div class="nl">HR Services</div>
       <div class="ni" data-pg="payslip"><i class="fas fa-file-invoice-dollar"></i>Payslip</div>
+      <div class="ni" data-pg="holidays"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing Check-in</div>
       <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
       <div class="ni" data-pg="directory"><i class="fas fa-address-book"></i>Directory</div>
@@ -175,7 +176,7 @@ tr:last-child td{border-bottom:none}
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],myAttendance=[],clockedIn=false,clockInTime=null,clockTimer=null,todayAtt=null;
+let me=null,myLeaves=[],myBalances=[],allEmployees=[],holidays=[],myAttendance=[],myHolidayWork=[],clockedIn=false,clockInTime=null,clockTimer=null,todayAtt=null;
 
 async function init(){
   const {data:{session}}=await sb.auth.getSession();
@@ -195,21 +196,19 @@ async function init(){
 async function loadMyData(){
   const now=new Date();
   const today=now.toISOString().split('T')[0];
-  const [l,b,a,ta]=await Promise.all([
+  const [l,b,a,ta,hw]=await Promise.all([
     sb.from('leave_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
     sb.from('leave_balances').select('*').eq('employee_id',me.id).eq('year',now.getFullYear()),
     sb.from('attendance').select('*').eq('employee_id',me.id).order('date',{ascending:false}).limit(30),
     sb.from('attendance').select('*').eq('employee_id',me.id).eq('date',today).maybeSingle(),
+    sb.from('holiday_work_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
   ]);
   myLeaves=l.data||[];myBalances=b.data||[];myAttendance=a.data||[];
-  todayAtt=ta.data||null;
-  // Restore clock state if already clocked in today
+  todayAtt=ta.data||null;myHolidayWork=hw.data||[];
   if(todayAtt?.check_in&&!todayAtt?.check_out){
-    clockedIn=true;
-    clockInTime=new Date(todayAtt.check_in);
+    clockedIn=true;clockInTime=new Date(todayAtt.check_in);
   } else {
-    clockedIn=false;
-    clockInTime=null;
+    clockedIn=false;clockInTime=null;
   }
 }
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
@@ -217,11 +216,11 @@ async function loadAllEmp(){const {data}=await sb.from('employees').select('firs
 
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
-  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',profile:'My Profile'};
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   clearInterval(clockTimer);
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,profile:renderProfile})[pg]?.();
+  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,profile:renderProfile})[pg]?.();
 }
 
 // ─── DASHBOARD ───
@@ -298,7 +297,13 @@ async function clockAction(btnId,dotId,txtId){
     if(btn){btn.textContent='Clock Out';btn.className='cbtn cbtn-out';}
     if(dot)dot.style.background='#F59E0B';
     if(txt)txt.textContent='Clocked in at '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    toast('Clocked in!','ok');
+    // Warn if today is a holiday
+    const todayHoliday=holidays.find(h=>h.date===today);
+    if(todayHoliday){
+      toast(`⚠️ Today is ${todayHoliday.name} — a holiday! Your work will be logged automatically.`,'wa');
+    } else {
+      toast('Clocked in!','ok');
+    }
   } else {
     const now=new Date();
     const hours=clockInTime?Math.round((now-clockInTime)/3600000*10)/10:0;
@@ -308,9 +313,35 @@ async function clockAction(btnId,dotId,txtId){
     if(btn){btn.textContent='Clock In';btn.className='cbtn cbtn-in';}
     if(dot)dot.style.background='#34D399';
     if(txt)txt.textContent='Not clocked in';
-    toast(`Clocked out · ${hours}h logged`,'ok');
+
+    // Auto-detect if today is a holiday and create request automatically
+    const todayHoliday=holidays.find(h=>h.date===today);
+    if(todayHoliday){
+      // Check if already submitted for this holiday
+      const alreadySubmitted=myHolidayWork.find(h=>h.holiday_id===todayHoliday.id);
+      if(!alreadySubmitted){
+        const {error:hwErr}=await sb.from('holiday_work_requests').insert({
+          employee_id:me.id,
+          holiday_id:todayHoliday.id,
+          holiday_date:today,
+          holiday_name:todayHoliday.name,
+          hours_worked:hours,
+          reason:'Auto-detected from attendance clock-out',
+          status:'pending'
+        });
+        if(!hwErr){
+          toast(`Clocked out · ${hours}h logged. Holiday work request auto-submitted for ${todayHoliday.name}. Admin will decide Comp Off or Double Pay.`,'ok');
+        } else {
+          toast(`Clocked out · ${hours}h logged.`,'ok');
+        }
+      } else {
+        toast(`Clocked out · ${hours}h logged.`,'ok');
+      }
+    } else {
+      toast(`Clocked out · ${hours}h logged`,'ok');
+    }
+
     await loadMyData();
-    // Refresh attendance stats if on attendance page
     if(document.getElementById('clk2')) renderAttendance();
   }
   if(btn)btn.disabled=false;
@@ -374,7 +405,16 @@ async function renderLeaves(){
     <td style="color:var(--tm);font-size:12px;max-width:150px">${l.reason||'-'}</td>
     <td><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}">${l.status}</span></td>
     <td>${l.status==='pending'?`<button class="btn bd2 bsm" onclick="cancelLeave('${l.id}')"><i class="fas fa-times"></i> Cancel</button>`:'-'}</td>
-  </tr>`).join(''):'<tr><td colspan="7" class="empty">No leave history yet.</td></tr>'}</tbody></table></div></div>`;
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">No leave history yet.</td></tr>'}</tbody></table></div></div>
+  ${myHolidayWork.length?`<div class="card"><div class="ch"><span class="ctitle">Holiday Work Requests</span><button class="btn bp bsm" onclick="openHolidayWorkModal()"><i class="fas fa-plus"></i> Report</button></div>
+  <div class="tw"><table><thead><tr><th>Holiday</th><th>Date</th><th>Hours</th><th>Benefit</th><th>Status</th></tr></thead>
+  <tbody>${myHolidayWork.map(h=>`<tr>
+    <td style="font-weight:600">${h.holiday_name}</td>
+    <td>${fd(h.holiday_date)}</td>
+    <td>${h.hours_worked}h</td>
+    <td>${h.benefit_type?`<span class="bx ${h.benefit_type==='comp_off'?'bl':'ok'}">${h.benefit_type==='comp_off'?'Comp Off':'Double Pay'}</span>`:'Pending decision'}</td>
+    <td><span class="bx ${h.status==='approved_comp'||h.status==='approved_pay'?'ok':h.status==='pending'?'wa':'er'}">${h.status==='approved_comp'?'Comp Off Granted':h.status==='approved_pay'?'Double Pay Approved':h.status}</span></td>
+  </tr>`).join('')}</tbody></table></div></div>`:`<div class="card"><div class="ch"><span class="ctitle">Holiday Work</span><button class="btn bp bsm" onclick="openHolidayWorkModal()"><i class="fas fa-plus"></i> Report Holiday Work</button></div><div class="ct2"><div class="empty"><i class="fas fa-calendar-xmark"></i>No holiday work reports yet</div></div></div>`}`;
 }
 
 function openLeaveModal(type='Annual Leave'){
@@ -440,7 +480,7 @@ async function renderPayslip(){
         <span class="bx ok">Processed</span>
       </div>
       <div class="g2" style="margin-bottom:16px">
-        ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account','HDFC ···· XXXX']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600">${vv}</div></div>`).join('')}
+        ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' — ···· '+me.bank_account.slice(-4):'')):'Not set — Contact HR'],['PF Number',me.pf_number||'Not set — Contact HR'],['UAN Number',me.uan_number||'Not set — Contact HR']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600;font-size:13px">${vv}</div></div>`).join('')}
       </div>
       <div class="g2">
         <div><div style="font-size:13px;font-weight:700;color:var(--ok);margin-bottom:9px">Earnings</div>
@@ -544,6 +584,55 @@ async function renderAnnouncements(){
   </div></div>`).join(''):'<div class="empty"><i class="fas fa-bullhorn"></i><div>No announcements yet</div></div>'}`;
 }
 
+// ─── HOLIDAY CALENDAR ───
+async function renderHolidays(){
+  const now=new Date();
+  const today=now.toISOString().split('T')[0];
+  const compulsory=holidays.filter(h=>h.type!=='Optional');
+  const optional=holidays.filter(h=>h.type==='Optional');
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Holiday Calendar ${now.getFullYear()}</h2><p>12 compulsory holidays + choose any 4 from 5 optional holidays</p></div></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="background:var(--pl);color:var(--p);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600"><i class="fas fa-circle-check"></i> ${compulsory.length} Compulsory Holidays</div>
+    <div style="background:var(--wal);color:#92400E;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600"><i class="fas fa-circle"></i> ${optional.length} Optional Holidays (choose any 4)</div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ctitle">${now.toLocaleString('default',{month:'long',year:'numeric'})}</span></div>
+      <div class="ct2">${buildCal()}</div>
+    </div>
+    <div class="card"><div class="ch"><span class="ctitle">All Holidays</span></div>
+      <div class="ct2">
+        <div style="font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Compulsory (12)</div>
+        ${compulsory.map(h=>{
+          const d=new Date(h.date+'T00:00:00');
+          const isPast=h.date<today;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);${isPast?'opacity:.5':''}">
+            <div style="text-align:center;min-width:40px;background:var(--pl);border-radius:7px;padding:4px">
+              <div style="font-size:14px;font-weight:700;color:var(--p)">${d.getDate()}</div>
+              <div style="font-size:9px;color:var(--p);text-transform:uppercase">${d.toLocaleString('default',{month:'short'})}</div>
+            </div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx pr">${h.type}</span></div>
+            ${isPast?'<span style="font-size:11px;color:var(--tl)">Past</span>':'<span class="bx ok">Upcoming</span>'}
+          </div>`;
+        }).join('')}
+        <div style="font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px">Optional (choose any 4)</div>
+        ${optional.map(h=>{
+          const d=new Date(h.date+'T00:00:00');
+          const isPast=h.date<today;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);${isPast?'opacity:.5':''}">
+            <div style="text-align:center;min-width:40px;background:var(--wal);border-radius:7px;padding:4px">
+              <div style="font-size:14px;font-weight:700;color:#92400E">${d.getDate()}</div>
+              <div style="font-size:9px;color:#92400E;text-transform:uppercase">${d.toLocaleString('default',{month:'short'})}</div>
+            </div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:600">${h.name}</div><span class="bx wa">Optional</span></div>
+            ${isPast?'<span style="font-size:11px;color:var(--tl)">Past</span>':'<span style="font-size:11px;color:var(--ok)">Upcoming</span>'}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
 // ─── DIRECTORY ───
 async function renderDirectory(){
   document.getElementById('ct').innerHTML=`
@@ -576,7 +665,7 @@ async function renderProfile(){
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>My Profile</h2></div></div>
   <div class="g2">
-    <div class="card"><div class="ch"><span class="ctitle">Personal Information</span><button class="btn bo bsm" onclick="openEditProfile()"><i class="fas fa-edit"></i> Edit</button></div>
+    <div class="card"><div class="ch"><span class="ctitle">Personal Information</span></div>
       <div class="ct2">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
           <div class="av" style="background:${me.avatar_color||'#4F46E5'};width:54px;height:54px;font-size:18px">${ini(me.first_name,me.last_name)}</div>
@@ -584,14 +673,14 @@ async function renderProfile(){
           <div style="font-size:13px;color:var(--tm)">${me.designation||''} ${me.department?'· '+me.department:''}</div>
           <span class="bx ok" style="margin-top:5px;display:inline-flex">${me.status||'active'}</span></div>
         </div>
-        ${[['Employee Code',me.employee_code],['Email',me.email],['Phone',me.phone||'Not set'],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-']].map(([k,vv])=>`
+        ${[['Employee Code',me.employee_code],['Email',me.email],['Phone',me.phone||'Not set'],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' ···· '+me.bank_account.slice(-4):'')):'Not set'],['PF Number',me.pf_number||'Not set'],['UAN Number',me.uan_number||'Not set']].map(([k,vv])=>`
         <div class="profile-field"><div class="pf-label">${k}</div><div class="pf-val">${vv}</div></div>`).join('')}
+        <div style="margin-top:12px;font-size:12px;color:var(--tl);background:var(--bg);padding:10px;border-radius:7px"><i class="fas fa-info-circle"></i> To update your details, contact your HR admin.</div>
       </div>
     </div>
     <div>
       <div class="card"><div class="ch"><span class="ctitle">Change Password</span></div>
         <div class="ct2">
-          <div style="margin-bottom:13px"><label class="lbl">Current Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-old" placeholder="Current password"><span class="pw-eye" onclick="tpw('cp-old',this)">👁</span></div></div>
           <div style="margin-bottom:13px"><label class="lbl">New Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-new" placeholder="Min 8 characters"><span class="pw-eye" onclick="tpw('cp-new',this)">👁</span></div></div>
           <div style="margin-bottom:14px"><label class="lbl">Confirm New Password</label><div class="pw-wrap"><input class="i" type="password" id="cp-new2" placeholder="Repeat new password"><span class="pw-eye" onclick="tpw('cp-new2',this)">👁</span></div></div>
           <button class="btn bp" style="width:100%" id="change-pw-btn" onclick="changePassword()"><i class="fas fa-key"></i> Update Password</button>
@@ -607,46 +696,57 @@ async function renderProfile(){
   </div>`;
 }
 
-function openEditProfile(){
+async function changePassword(){
+  const newPw=v('cp-new'),newPw2=v('cp-new2');
+  if(!newPw||!newPw2){toast('Fill both password fields','wa');return;}
+  if(newPw.length<8){toast('Password must be at least 8 characters','wa');return;}
+  if(newPw!==newPw2){toast('Passwords do not match','wa');return;}
+  setBtnLoad('change-pw-btn',true,'Updating…');
+  const {error}=await sb.auth.updateUser({password:newPw});
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-new2').value='';
+  toast('Password changed! Redirecting to login…','ok');
+  setTimeout(async()=>{await sb.auth.signOut();location.href='index.html';},2000);
+}
+
+// ─── HOLIDAY WORK ───
+function openHolidayWorkModal(){
+  const today=new Date().toISOString().split('T')[0];
+  const pastHolidays=holidays.filter(h=>h.date<=today);
+  if(!pastHolidays.length){toast('No holidays found to report work on.','wa');return;}
   document.getElementById('md').innerHTML=`
-  <div class="mh"><span class="mt">Edit Profile</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mh"><span class="mt">Report Holiday Work</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
-    <div class="fr"><div><label class="lbl">First Name</label><input class="i" id="ep-fn" value="${me.first_name}"></div><div><label class="lbl">Last Name</label><input class="i" id="ep-ln" value="${me.last_name}"></div></div>
-    <div class="fr f1"><div><label class="lbl">Phone</label><input class="i" id="ep-ph" value="${me.phone||''}" placeholder="9876543210"></div></div>
-    <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Email, department, and designation can only be changed by your HR admin.</div>
+    <div style="background:var(--wal);color:#92400E;border-radius:8px;padding:11px;font-size:12px;margin-bottom:16px"><i class="fas fa-info-circle"></i> If you worked on an official holiday, report it here. Admin will review and grant either <strong>Comp Off</strong> or <strong>Double Pay (2x)</strong>.</div>
+    <div class="fr f1"><div><label class="lbl">Holiday Worked On</label><select class="i" id="hw-hol"><option value="">Select holiday…</option>${pastHolidays.map(h=>`<option value="${h.id}" data-date="${h.date}" data-name="${h.name.replace(/"/g,'&quot;')}">${h.name} (${fd(h.date)})</option>`).join('')}</select></div></div>
+    <div class="fr f1"><div><label class="lbl">Hours Worked</label><select class="i" id="hw-hrs"><option value="4">Half Day (4 hours)</option><option value="8" selected>Full Day (8 hours)</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Preferred Benefit</label><select class="i" id="hw-pref"><option value="comp_off">Compensatory Off (Comp Off)</option><option value="double_pay">Double Pay (2x)</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Reason / Work Done</label><textarea class="i" id="hw-reason" placeholder="Briefly describe what work was done…"></textarea></div></div>
   </div>
-  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-profile-btn" onclick="saveProfile()">Save</button></div>`;
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="submit-hw-btn" onclick="submitHolidayWork()"><i class="fas fa-paper-plane"></i> Submit Request</button></div>`;
   document.getElementById('mo').classList.add('op');
 }
 
-async function saveProfile(){
-  const fn=v('ep-fn'),ln=v('ep-ln'),ph=v('ep-ph');
-  if(!fn||!ln){toast('Name cannot be empty','wa');return;}
-  setBtnLoad('save-profile-btn',true,'Saving…');
-  const {error}=await sb.from('employees').update({first_name:fn,last_name:ln,phone:ph}).eq('id',me.id);
-  if(error){toast('Error: '+error.message,'er');setBtnLoad('save-profile-btn',false,'Save');return;}
-  me.first_name=fn;me.last_name=ln;me.phone=ph;
-  document.getElementById('sb-name').textContent=fn+' '+ln;
-  setAv('sb-av',fn,ln,me.avatar_color);
-  closeMo();toast('Profile updated!','ok');renderProfile();
-}
-
-async function changePassword(){
-  const oldPw=v('cp-old'),newPw=v('cp-new'),newPw2=v('cp-new2');
-  if(!oldPw||!newPw||!newPw2){toast('Fill all password fields','wa');return;}
-  if(newPw.length<8){toast('New password must be at least 8 characters','wa');return;}
-  if(newPw!==newPw2){toast('New passwords do not match','wa');return;}
-  setBtnLoad('change-pw-btn',true,'Updating…');
-  // updateUser is safe — only works for the currently authenticated session
-  const {error}=await sb.auth.updateUser({password:newPw});
-  if(error){toast('Error: '+error.message,'er');setBtnLoad('change-pw-btn',false,'Update Password');return;}
-  document.getElementById('cp-old').value='';
-  document.getElementById('cp-new').value='';
-  document.getElementById('cp-new2').value='';
-  toast('Password changed successfully! Please log in again.','ok');
-  setBtnLoad('change-pw-btn',false,'Update Password');
-  // Sign out and redirect so they log in with new password
-  setTimeout(async()=>{await sb.auth.signOut();location.href='index.html';},2000);
+async function submitHolidayWork(){
+  const sel=document.getElementById('hw-hol');
+  const opt=sel?.options[sel.selectedIndex];
+  const holId=sel?.value,holDate=opt?.dataset.date,holName=opt?.dataset.name;
+  if(!holId){toast('Select a holiday','wa');return;}
+  // Check not already submitted
+  const already=myHolidayWork.find(h=>h.holiday_id===holId);
+  if(already){toast('You have already reported work for this holiday','wa');return;}
+  setBtnLoad('submit-hw-btn',true,'Submitting…');
+  const {error}=await sb.from('holiday_work_requests').insert({
+    employee_id:me.id,holiday_id:holId,holiday_date:holDate,holiday_name:holName,
+    hours_worked:parseFloat(v('hw-hrs'))||8,
+    reason:v('hw-reason'),
+    benefit_type:v('hw-pref'),
+    status:'pending'
+  });
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('submit-hw-btn',false,'Submit Request');return;}
+  closeMo();toast('Holiday work request submitted! Admin will review shortly.','ok');
+  await loadMyData();nav('leaves');
 }
 
 // ─── HELPERS ───
