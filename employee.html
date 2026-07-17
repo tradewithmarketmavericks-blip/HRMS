@@ -527,16 +527,13 @@ async function renderPayslip(){
   const months=Array.from({length:12},(_,i)=>i+1);
   const {data:payrollList}=await sb.from('payroll').select('*').eq('employee_id',me.id).order('year',{ascending:false}).order('month',{ascending:false}).limit(12);
   const sal=me.gross_salary||0;
-  const pf=Math.round(sal*0.12);
-  const tax=me.tax_amount||0;
   // Calculate LOP for current month
   const lopBal=myBalances.find(b=>b.leave_type==='LOP');
   const lopDays=lopBal?.used_days||0;
-  const workingDays=26; // standard working days
+  const workingDays=26;
   const perDaySalary=Math.round(sal/workingDays);
   const lopDeduction=lopDays*perDaySalary;
-  const net=sal-pf-tax-200-lopDeduction;
-  // Last day of month note
+  const net=sal-lopDeduction;
   const lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const isLastDay=now.getDate()===lastDay;
   document.getElementById('ct').innerHTML=`
@@ -564,11 +561,8 @@ async function renderPayslip(){
           <div class="payslip-row" style="font-weight:700"><span>Gross Pay</span><span>₹${sal.toLocaleString('en-IN')}</span></div>
         </div>
         <div><div style="font-size:13px;font-weight:700;color:var(--er);margin-bottom:9px">Deductions</div>
-          <div class="payslip-row"><span>PF (12%)</span><span>₹${pf.toLocaleString('en-IN')}</span></div>
-          <div class="payslip-row"><span>TDS</span><span>₹${tax.toLocaleString('en-IN')}</span></div>
-          <div class="payslip-row"><span>Professional Tax</span><span>₹200</span></div>
-          ${lopDeduction>0?`<div class="payslip-row" style="color:var(--er)"><span>LOP (${lopDays} day${lopDays>1?'s':''} × ₹${perDaySalary}/day)</span><span>-₹${lopDeduction.toLocaleString('en-IN')}</span></div>`:''}
-          <div class="payslip-row" style="font-weight:700"><span>Total Deductions</span><span>₹${(pf+tax+200+lopDeduction).toLocaleString('en-IN')}</span></div>
+          ${lopDeduction>0?`<div class="payslip-row" style="color:var(--er)"><span>LOP (${lopDays} day${lopDays>1?'s':''} × ₹${perDaySalary}/day)</span><span>-₹${lopDeduction.toLocaleString('en-IN')}</span></div>`:'<div style="font-size:13px;color:var(--tl);padding:8px 0">No deductions this month</div>'}
+          <div class="payslip-row" style="font-weight:700"><span>Total Deductions</span><span>₹${lopDeduction.toLocaleString('en-IN')}</span></div>
         </div>
       </div>
       ${lopDeduction>0?`<div style="background:var(--erl);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#991B1B"><i class="fas fa-triangle-exclamation"></i> LOP deduction of ₹${lopDeduction.toLocaleString('en-IN')} applied for ${lopDays} day(s) of unpaid leave this month.</div>`:''}
@@ -578,7 +572,7 @@ async function renderPayslip(){
         <span style="font-size:20px;font-weight:700">₹${net.toLocaleString('en-IN')}</span>
       </div>
       <div style="text-align:center;margin-top:14px">
-        <button class="btn bo" onclick="toast('Contact HR to download PDF payslip.','')"><i class="fas fa-download"></i> Download PDF</button>
+        <button class="btn bo" onclick="printEmpPayslip()"><i class="fas fa-download"></i> Download PDF</button>
       </div>
     </div>
   </div>
@@ -869,6 +863,55 @@ async function submitRegularisation(){
   if(error){toast('Error: '+error.message,'er');setBtnLoad('submit-rg-btn',false,'Submit for Approval');return;}
   closeMo();toast('Regularisation request submitted for admin approval.','ok');
   await loadMyData();renderAttendance();
+}
+
+function printEmpPayslip(){
+  const now=new Date();
+  const sal=me.gross_salary||0;
+  const lopBal=myBalances.find(b=>b.leave_type==='LOP');
+  const lopDays=lopBal?.used_days||0;
+  const perDay=Math.round(sal/26);
+  const lopDed=lopDays*perDay;
+  const net=sal-lopDed;
+  const monthYear=now.toLocaleString('default',{month:'long',year:'numeric'});
+  const html=`<!DOCTYPE html><html><head><title>Payslip ${monthYear}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:32px;color:#111}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>
+  <div style="max-width:680px;margin:0 auto;position:relative">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:80px;font-weight:900;color:rgba(79,70,229,.06);white-space:nowrap;pointer-events:none">PeopleCore</div>
+    <div style="position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #4F46E5;margin-bottom:20px">
+        <div><div style="font-size:22px;font-weight:800;color:#4F46E5">PeopleCore</div><div style="font-size:11px;color:#666;margin-top:2px">Human Resource Management</div></div>
+        <div style="text-align:right"><div style="font-size:15px;font-weight:700">SALARY SLIP</div><div style="font-size:12px;color:#666">${monthYear}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#F8F7FF;border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px">
+        ${[['Employee Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' ···· '+me.bank_account.slice(-4):'')):'—'],['PF / UAN',me.pf_number||'—']].map(([k,v2])=>`<div><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.4px;font-weight:700">${k}</div><div style="font-weight:600;margin-top:1px">${v2}</div></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #059669">Earnings</div>
+          ${[['Basic (50%)',Math.round(sal*0.5)],['HRA (20%)',Math.round(sal*0.2)],['Special Allowance (20%)',Math.round(sal*0.2)],['Transport (10%)',Math.round(sal*0.1)]].map(([k,v2])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #F3F4F6;font-size:13px"><span>${k}</span><span style="font-weight:600">₹${v2.toLocaleString('en-IN')}</span></div>`).join('')}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;border-top:2px solid #111;margin-top:4px"><span>Gross Earnings</span><span>₹${sal.toLocaleString('en-IN')}</span></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #DC2626">Deductions</div>
+          ${lopDays>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #F3F4F6;font-size:13px;color:#DC2626"><span>LOP (${lopDays} days × ₹${perDay})</span><span style="font-weight:600">₹${lopDed.toLocaleString('en-IN')}</span></div>`:'<div style="font-size:13px;color:#888;padding:10px 0">No deductions this month</div>'}
+          <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;border-top:2px solid #111;margin-top:4px"><span>Total Deductions</span><span>₹${lopDed.toLocaleString('en-IN')}</span></div>
+        </div>
+      </div>
+      <div style="background:#4F46E5;color:white;border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:12px;opacity:.8;text-transform:uppercase;letter-spacing:.5px">Net Pay — ${monthYear}</div><div style="font-size:10px;opacity:.6;margin-top:2px">Amount to be credited</div></div>
+        <div style="font-size:26px;font-weight:800">₹${net.toLocaleString('en-IN')}</div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px dashed #DDD;display:flex;justify-content:space-between;font-size:11px;color:#888">
+        <span>Generated by PeopleCore HRMS</span>
+        <span>${now.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</span>
+      </div>
+    </div>
+  </div></body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>{w.print();},500);
 }
 
 // ─── HELPERS ───
