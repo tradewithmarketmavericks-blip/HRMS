@@ -432,8 +432,9 @@ async function saveNewEmployee(){
   ]);
 
   // Send password reset so employee sets their own password
+  const redirectUrl=window.location.href.replace('admin.html','index.html');
   await sbReg.auth.resetPasswordForEmail(em,{
-    redirectTo:`${window.location.origin}/HRMS/index.html`
+    redirectTo:redirectUrl
   });
 
   await loadEmployees();
