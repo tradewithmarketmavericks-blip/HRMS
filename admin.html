@@ -1378,12 +1378,15 @@ async function saveAnn(){
 async function renderDocuments(){
   const empMap={};employees.forEach(e=>empMap[e.id]=e);
   const {data:docs}=await sb.from('documents').select('*').order('created_at',{ascending:false});
+  const typeLabel={offer_letter:'Offer Letter',appraisal:'Appraisal',id_proof:'ID Proof',salary_certificate:'Salary Certificate',nda:'NDA',other:'Other'};
+  const typeColor={offer_letter:'bl',appraisal:'pu',id_proof:'ok',salary_certificate:'wa',nda:'er',other:'gy'};
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>Documents</h2><p>Employee documents and company files</p></div>
     <button class="btn bp" onclick="openUploadDoc()"><i class="fas fa-upload"></i> Upload Document</button></div>
-  <div class="flex gap2" style="margin-bottom:16px">
+  <div class="flex gap2" style="margin-bottom:16px;flex-wrap:wrap">
     <select class="i" style="width:180px" id="doc-emp-filter" onchange="filterDocs()">
       <option value="">All Employees</option>
+      <option value="company">Company-wide only</option>
       ${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name}</option>`).join('')}
     </select>
     <select class="i" style="width:160px" id="doc-type-filter" onchange="filterDocs()">
@@ -1395,24 +1398,34 @@ async function renderDocuments(){
       <option value="nda">NDA</option>
       <option value="other">Other</option>
     </select>
+    <select class="i" style="width:150px" id="doc-vis-filter" onchange="filterDocs()">
+      <option value="">All Visibility</option>
+      <option value="admin">Admin Only</option>
+      <option value="employee">Visible to Employee</option>
+    </select>
   </div>
   <div id="doc-grid" class="g3">
     ${docs&&docs.length?docs.map(d=>{
       const emp=empMap[d.employee_id]||{};
-      const typeLabel={offer_letter:'Offer Letter',appraisal:'Appraisal',id_proof:'ID Proof',salary_certificate:'Salary Certificate',nda:'NDA',other:'Other'};
-      const typeColor={offer_letter:'bl',appraisal:'pu',id_proof:'ok',salary_certificate:'wa',nda:'er',other:'gy'};
-      return `<div class="card doc-card" data-emp="${d.employee_id||''}" data-type="${d.doc_type||'other'}">
+      const displayTitle=d.title||d.file_name||d.name||'Document';
+      return `<div class="card doc-card" data-emp="${d.employee_id||'company'}" data-type="${d.doc_type||'other'}" data-vis="${d.admin_only?'admin':'employee'}">
         <div class="ct2">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-            <div style="width:40px;height:40px;background:var(--pl);border-radius:8px;display:flex;align-items:center;justify-content:center"><i class="fas fa-file-alt" style="color:var(--p);font-size:18px"></i></div>
-            <span class="bx ${typeColor[d.doc_type]||'gy'}">${typeLabel[d.doc_type]||'Other'}</span>
+            <div style="width:40px;height:40px;background:var(--pl);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fas fa-file-alt" style="color:var(--p);font-size:18px"></i>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+              <span class="bx ${typeColor[d.doc_type]||'gy'}">${typeLabel[d.doc_type]||'Other'}</span>
+              ${d.admin_only?'<span class="bx er"><i class="fas fa-lock"></i> Admin Only</span>':'<span class="bx ok"><i class="fas fa-eye"></i> Visible</span>'}
+            </div>
           </div>
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px">${d.file_name||d.name||'Document'}</div>
-          <div style="font-size:12px;color:var(--tm);margin-bottom:10px">${emp.first_name?emp.first_name+' '+emp.last_name:'Company-wide'}</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:3px">${displayTitle}</div>
+          <div style="font-size:12px;color:var(--tm);margin-bottom:3px">${d.employee_id?emp.first_name+' '+emp.last_name:'Company-wide'}</div>
           <div style="font-size:11px;color:var(--tl);margin-bottom:12px">${d.created_at?fd(d.created_at.split('T')[0]):''}</div>
-          <div class="flex gap2">
+          <div class="flex gap2" style="flex-wrap:wrap">
             ${d.file_url?`<a href="${d.file_url}" target="_blank" class="btn bo bsm"><i class="fas fa-eye"></i> View</a>
-            <a href="${d.file_url}" download class="btn bp bsm"><i class="fas fa-download"></i></a>`:'<span style="font-size:12px;color:var(--tl)">No file attached</span>'}
+            <a href="${d.file_url}" download class="btn bp bsm"><i class="fas fa-download"></i></a>`:'<span style="font-size:11px;color:var(--tl)">No file</span>'}
+            <button class="btn bo bsm edit-doc-btn" data-id="${d.id}" data-title="${displayTitle.replace(/"/g,'&quot;')}" data-type="${d.doc_type||'other'}" data-admin="${d.admin_only?'true':'false'}"><i class="fas fa-edit"></i></button>
             <button class="btn bd2 bsm bic del-doc-btn" data-id="${d.id}"><i class="fas fa-trash"></i></button>
           </div>
         </div>
@@ -1424,10 +1437,12 @@ async function renderDocuments(){
 function filterDocs(){
   const emp=document.getElementById('doc-emp-filter')?.value||'';
   const type=document.getElementById('doc-type-filter')?.value||'';
+  const vis=document.getElementById('doc-vis-filter')?.value||'';
   document.querySelectorAll('.doc-card').forEach(c=>{
-    const eMatch=!emp||c.dataset.emp===emp;
+    const eMatch=!emp||(emp==='company'?c.dataset.emp==='company':c.dataset.emp===emp);
     const tMatch=!type||c.dataset.type===type;
-    c.style.display=eMatch&&tMatch?'':'none';
+    const vMatch=!vis||c.dataset.vis===vis;
+    c.style.display=eMatch&&tMatch&&vMatch?'':'none';
   });
 }
 
@@ -1435,40 +1450,76 @@ function openUploadDoc(){
   document.getElementById('md').innerHTML=`
   <div class="mh"><span class="mt">Upload Document</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
-    <div class="fr f1"><div><label class="lbl">Employee</label><select class="i" id="doc-emp"><option value="">Company-wide</option>${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name} (${e.employee_code})</option>`).join('')}</select></div></div>
-    <div class="fr"><div><label class="lbl">Document Type</label><select class="i" id="doc-type"><option value="offer_letter">Offer Letter</option><option value="appraisal">Appraisal</option><option value="id_proof">ID Proof</option><option value="salary_certificate">Salary Certificate</option><option value="nda">NDA</option><option value="other">Other</option></select></div>
-    <div><label class="lbl">Document Name</label><input class="i" id="doc-name" placeholder="e.g. Offer Letter - July 2026"></div></div>
-    <div class="fr f1"><div><label class="lbl">Upload File</label><input class="i" type="file" id="doc-file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg"></div></div>
-    <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Files are stored securely. Max size: 10MB. Supported: PDF, Word, Images.</div>
+    <div class="fr f1"><div><label class="lbl">Document Title *</label><input class="i" id="doc-title" placeholder="e.g. Offer Letter — John Doe, July 2026"></div></div>
+    <div class="fr"><div><label class="lbl">For Employee</label><select class="i" id="doc-emp"><option value="">Company-wide</option>${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name} (${e.employee_code})</option>`).join('')}</select></div>
+    <div><label class="lbl">Document Type</label><select class="i" id="doc-type"><option value="offer_letter">Offer Letter</option><option value="appraisal">Appraisal</option><option value="id_proof">ID Proof</option><option value="salary_certificate">Salary Certificate</option><option value="nda">NDA</option><option value="other">Other</option></select></div></div>
+    <div class="fr f1"><div><label class="lbl">Upload File (PDF, Word, Image — Max 10MB)</label><input class="i" type="file" id="doc-file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg"></div></div>
+    <div class="fr f1"><div><label class="lbl">Visibility</label>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="doc-vis" value="false" checked> <span><strong>Visible to employee</strong> — employee can see and download this</span></label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="doc-vis" value="true"> <span><strong>Admin only</strong> — hidden from employee (templates, drafts etc.)</span></label>
+      </div>
+    </div></div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="upload-doc-btn" onclick="uploadDocument()"><i class="fas fa-upload"></i> Upload</button></div>`;
   document.getElementById('mo').classList.add('op');
 }
 
 async function uploadDocument(){
+  const title=v('doc-title');
   const empId=v('doc-emp')||null;
-  const name=v('doc-name');
   const file=document.getElementById('doc-file')?.files[0];
-  if(!name){toast('Enter a document name','wa');return;}
+  const adminOnly=document.querySelector('input[name="doc-vis"]:checked')?.value==='true';
+  if(!title){toast('Enter a document title','wa');return;}
   setBtnLoad('upload-doc-btn',true,'Uploading…');
   let fileUrl=null,fileName=null,fileSize=null;
   if(file){
     if(file.size>10*1024*1024){toast('File too large. Max 10MB.','wa');setBtnLoad('upload-doc-btn',false,'Upload');return;}
     const ext=file.name.split('.').pop();
     const path=`${empId||'company'}/${Date.now()}.${ext}`;
-    const {data:up,error:upErr}=await sb.storage.from('documents').upload(path,file,{upsert:true});
+    const {error:upErr}=await sb.storage.from('documents').upload(path,file,{upsert:true});
     if(upErr){toast('Upload error: '+upErr.message,'er');setBtnLoad('upload-doc-btn',false,'Upload');return;}
     const {data:urlData}=sb.storage.from('documents').getPublicUrl(path);
     fileUrl=urlData?.publicUrl;fileName=file.name;fileSize=file.size;
   }
   const {error}=await sb.from('documents').insert({
-    employee_id:empId,name,file_name:fileName||name,
-    file_url:fileUrl,file_size:fileSize,
+    employee_id:empId,title,name:title,
+    file_name:fileName||title,file_url:fileUrl,file_size:fileSize,
     doc_type:v('doc-type'),uploaded_by:me.id,
-    is_company_wide:!empId
+    is_company_wide:!empId,admin_only:adminOnly
   });
   if(error){toast('Error: '+error.message,'er');setBtnLoad('upload-doc-btn',false,'Upload');return;}
   closeMo();toast('Document uploaded!','ok');renderDocuments();
+}
+
+function openEditDoc(id,currentTitle,currentType,isAdminOnly){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Edit Document</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Document Title</label><input class="i" id="edit-doc-title" value="${currentTitle}"></div></div>
+    <div class="fr f1"><div><label class="lbl">Document Type</label><select class="i" id="edit-doc-type">
+      ${['offer_letter','appraisal','id_proof','salary_certificate','nda','other'].map(t=>`<option value="${t}" ${t===currentType?'selected':''}>${{offer_letter:'Offer Letter',appraisal:'Appraisal',id_proof:'ID Proof',salary_certificate:'Salary Certificate',nda:'NDA',other:'Other'}[t]}</option>`).join('')}
+    </select></div></div>
+    <div class="fr f1"><div><label class="lbl">Visibility</label>
+      <div style="display:flex;gap:16px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="edit-doc-vis" value="false" ${!isAdminOnly?'checked':''}> Visible to employee</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="radio" name="edit-doc-vis" value="true" ${isAdminOnly?'checked':''}> Admin only</label>
+      </div>
+    </div></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-doc-btn" onclick="saveDocEdit('${id}')">Save Changes</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function saveDocEdit(id){
+  const title=v('edit-doc-title');
+  const type=v('edit-doc-type');
+  const adminOnly=document.querySelector('input[name="edit-doc-vis"]:checked')?.value==='true';
+  if(!title){toast('Title cannot be empty','wa');return;}
+  setBtnLoad('save-doc-btn',true,'Saving…');
+  const {error}=await sb.from('documents').update({title,name:title,doc_type:type,admin_only:adminOnly}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('save-doc-btn',false,'Save Changes');return;}
+  closeMo();toast('Document updated!','ok');renderDocuments();
 }
 
 // Onboarding checklist
@@ -1689,6 +1740,11 @@ document.getElementById('confirm-ok').onclick=()=>{closeConfirm();if(confirmCb)c
 
 // ─── SAFE EVENT DELEGATION (avoids inline onclick quote issues) ───
 document.addEventListener('click',async function(e){
+  // Document edit
+  const docEditBtn=e.target.closest('.edit-doc-btn');
+  if(docEditBtn){
+    openEditDoc(docEditBtn.dataset.id,docEditBtn.dataset.title,docEditBtn.dataset.type,docEditBtn.dataset.admin==='true');return;
+  }
   // Document delete
   const docDelBtn=e.target.closest('.del-doc-btn');
   if(docDelBtn){
