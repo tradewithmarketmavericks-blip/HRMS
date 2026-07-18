@@ -223,12 +223,13 @@ async function loadEmployees(){const {data}=await sb.from('employees').select('*
 async function loadDepartments(){const {data}=await sb.from('departments').select('*').order('name');departments=data||[];}
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
 async function updateBadge(){
-  const [{count:lc},{count:hwc}]=await Promise.all([
+  const [{count:lc},{count:hwc},{count:rc}]=await Promise.all([
     sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
     sb.from('holiday_work_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+    sb.from('regularisation_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
   ]);
   const el=document.getElementById('leave-badge');
-  const total=(lc||0)+(hwc||0);
+  const total=(lc||0)+(hwc||0)+(rc||0);
   if(el){el.textContent=total;el.style.display=total>0?'inline':'none';}
 }
 
@@ -571,7 +572,8 @@ async function viewEmp(id){
 // ─── ATTENDANCE ───
 async function renderAttendance(){
   const today=new Date().toISOString().split('T')[0];
-  const {data:att}=await sb.from('attendance').select('*,employees(first_name,last_name,avatar_color,department)').order('date',{ascending:false}).limit(80);
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data:att}=await sb.from('attendance').select('*').order('date',{ascending:false}).limit(80);
   const {count:presentCount}=await sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('status','present');
   const {count:wfhCount}=await sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('type','WFH');
   document.getElementById('ct').innerHTML=`
@@ -586,16 +588,21 @@ async function renderAttendance(){
   <div class="card"><div class="ch"><span class="ctitle">Attendance Log</span>
     <input class="i" style="width:150px" type="date" id="att-date-filter" onchange="filterAttDate(this.value)">
   </div>
-  <div class="tw"><table id="att-table"><thead><tr><th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Type</th><th>Status</th></tr></thead>
-  <tbody>${att&&att.length?att.map(a=>`<tr data-date="${a.date}">
-    <td><div class="flex gap2"><div class="av32" style="background:${a.employees?.avatar_color||'#4F46E5'}">${ini(a.employees?.first_name,a.employees?.last_name)}</div><span style="font-weight:600">${a.employees?.first_name} ${a.employees?.last_name}</span></div></td>
+  <div class="tw"><table id="att-table"><thead><tr><th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Day Status</th><th>Type</th></tr></thead>
+  <tbody>${att&&att.length?att.map(a=>{
+    const emp=empMap[a.employee_id]||{};
+    const hrs=a.hours_worked||0;
+    const dayStatus=a.attendance_status==='half'?'Half Day':hrs>=9?'Full Day':hrs>0?`Short (${hrs}h)`:'—';
+    const dayColor=a.attendance_status==='half'?'wa':hrs>=9?'ok':hrs>0?'bl':'gy';
+    return `<tr data-date="${a.date}">
+    <td><div class="flex gap2"><div class="av32" style="background:${emp.avatar_color||'#4F46E5'}">${ini(emp.first_name,emp.last_name)}</div><div><span style="font-weight:600">${emp.first_name||'?'} ${emp.last_name||''}</span><div style="font-size:11px;color:var(--tm)">${emp.employee_code||''}</div></div></div></td>
     <td>${fd(a.date)}</td>
     <td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
     <td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td>
-    <td>${a.hours_worked?a.hours_worked+'h':'-'}</td>
-    <td><span class="bx ${a.type==='WFH'?'bl':a.type==='Half Day'?'wa':'ok'}">${a.type||'Office'}</span></td>
-    <td><span class="bx ${a.status==='present'?'ok':'er'}">${a.status}</span></td>
-  </tr>`).join(''):'<tr><td colspan="7" class="empty">No records yet</td></tr>'}</tbody></table></div></div>`;
+    <td style="${hrs>0&&hrs<9?'color:var(--er);font-weight:600':''}">${hrs?hrs+'h':'-'}</td>
+    <td><span class="bx ${dayColor}">${dayStatus}</span></td>
+    <td><span class="bx ${a.type==='WFH'?'bl':'ok'}">${a.type||'Office'}</span></td>
+  </tr>`;}).join(''):'<tr><td colspan="7" class="empty">No records yet</td></tr>'}</tbody></table></div></div>`;
 }
 
 function filterAttDate(val){
@@ -930,7 +937,8 @@ function printPayslip(){
 
 // ─── INCENTIVES ───
 async function renderIncentives(){
-  const {data:inc}=await sb.from('incentives').select('*,employees(first_name,last_name,avatar_color)').order('created_at',{ascending:false});
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data:inc}=await sb.from('incentives').select('*').order('created_at',{ascending:false});
   const total=inc?inc.reduce((s,i)=>s+i.amount,0):0;
   const paid=inc?inc.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0):0;
   document.getElementById('ct').innerHTML=`
@@ -945,7 +953,7 @@ async function renderIncentives(){
   <div class="card"><div class="ch"><span class="ctitle">Incentive Records</span></div>
   <div class="tw"><table><thead><tr><th>Employee</th><th>Type</th><th>Amount</th><th>Period</th><th>Notes</th><th>Status</th><th>Action</th></tr></thead>
   <tbody>${inc&&inc.length?inc.map(i=>`<tr>
-    <td><div class="flex gap2"><div class="av32" style="background:${i.employees?.avatar_color||'#4F46E5'}">${ini(i.employees?.first_name,i.employees?.last_name)}</div><span style="font-weight:600">${i.employees?.first_name} ${i.employees?.last_name}</span></div></td>
+    <td><div class="flex gap2"><div class="av32" style="background:${empMap[i.employee_id]?.avatar_color||'#4F46E5'}">${ini(empMap[i.employee_id]?.first_name,empMap[i.employee_id]?.last_name)}</div><span style="font-weight:600">${empMap[i.employee_id]?.first_name||'?'} ${empMap[i.employee_id]?.last_name||''}</span></div></td>
     <td><span class="bx pu">${i.type}</span></td>
     <td style="font-weight:700;color:var(--ok)">₹${i.amount.toLocaleString('en-IN')}</td>
     <td>${i.period||'-'}</td>
@@ -1253,7 +1261,8 @@ async function updateDept(id){
 
 // ─── WELLBEING ───
 async function renderWellbeing(){
-  const {data:surveys}=await sb.from('wellbeing_surveys').select('*,employees(first_name,last_name,avatar_color)').order('created_at',{ascending:false});
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data:surveys}=await sb.from('wellbeing_surveys').select('*').order('created_at',{ascending:false});
   const avg=surveys&&surveys.length?Math.round(surveys.reduce((s,x)=>s+(x.overall_score||0),0)/surveys.length):0;
   const lowScores=surveys?surveys.filter(s=>(s.overall_score||0)<50):[];
   const pending=Math.max(0,employees.filter(e=>e.status==='active').length-(surveys?new Set(surveys.map(s=>s.employee_id)).size:0));
@@ -1271,7 +1280,7 @@ async function renderWellbeing(){
   <div class="tw"><table id="wb-table"><thead><tr><th>Employee</th><th>Score</th><th>Mood</th><th>Workload</th><th>Team</th><th>Balance</th><th>Motivation</th><th>Period</th></tr></thead>
   <tbody id="wb-tbody">${surveys&&surveys.length?surveys.map(s=>{
     const score=s.overall_score||0;
-    return `<tr data-score="${score}"><td><div class="flex gap2"><div class="av32" style="background:${s.employees?.avatar_color||'#4F46E5'}">${ini(s.employees?.first_name,s.employees?.last_name)}</div><span style="font-weight:600">${s.employees?.first_name} ${s.employees?.last_name}</span></div></td>
+    return `<tr data-score="${score}"><td><div class="flex gap2"><div class="av32" style="background:${empMap[s.employee_id]?.avatar_color||'#4F46E5'}">${ini(empMap[s.employee_id]?.first_name,empMap[s.employee_id]?.last_name)}</div><span style="font-weight:600">${empMap[s.employee_id]?.first_name||'?'} ${empMap[s.employee_id]?.last_name||''}</span></div></td>
     <td><div class="flex gap2"><div class="prog" style="width:70px"><div class="pb" style="width:${score}%;background:${score>=70?'var(--ok)':score>=40?'var(--wa)':'var(--er)'}"></div></div><span style="font-weight:600;color:${score>=70?'var(--ok)':score<50?'var(--er)':'var(--wa)'}">${score}</span></div></td>
     <td>${stars(s.mood_score)}</td><td>${stars(s.workload_score)}</td><td>${stars(s.team_score)}</td><td>${stars(s.balance_score)}</td><td>${stars(s.motivation_score)}</td>
     <td style="font-size:12px;color:var(--tm)">${s.month}/${s.year}</td></tr>`;}).join(''):'<tr><td colspan="8" class="empty">No survey responses yet</td></tr>'}</tbody></table></div></div>`;
@@ -1383,9 +1392,21 @@ function dlCSV(rows,filename){
 function empDir(){dlCSV(['Code,Name,Email,Phone,Department,Designation,Joined,Salary,Status',...employees.map(e=>`${e.employee_code},"${e.first_name} ${e.last_name}",${e.email},${e.phone||''},${e.department||''},${e.designation||''},${e.date_of_joining||''},${e.gross_salary||0},${e.status||'active'}`)], 'employee_directory.csv');}
 function payRep(){dlCSV(['Name,Code,Department,Gross Salary,PF (12%),TDS,Prof Tax,Net Pay',...employees.filter(e=>e.status==='active').map(e=>{const pf=Math.round((e.gross_salary||0)*0.12);return `"${e.first_name} ${e.last_name}",${e.employee_code},${e.department||''},${e.gross_salary||0},${pf},${e.tax_amount||0},200,${(e.gross_salary||0)-pf-(e.tax_amount||0)-200}`;})], 'payroll_report.csv');}
 function deptRep(){dlCSV(['Department,Head,Active Employees',...departments.map(d=>`${d.name},${d.head_name||''},${employees.filter(e=>e.department===d.name&&e.status==='active').length}`)], 'department_report.csv');}
-async function attRep(){const {data}=await sb.from('attendance').select('*,employees(first_name,last_name,employee_code)').order('date',{ascending:false}).limit(500);dlCSV(['Employee,Code,Date,Check In,Check Out,Hours,Type,Status',...(data||[]).map(a=>`"${a.employees?.first_name} ${a.employees?.last_name}",${a.employees?.employee_code},${a.date},${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'},${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'},${a.hours_worked||0},${a.type},${a.status}`)], 'attendance_report.csv');}
-async function leaveRep(){const {data}=await sb.from('leave_requests').select('*,employees(first_name,last_name,employee_code)').order('created_at',{ascending:false});dlCSV(['Employee,Code,Leave Type,From,To,Days,Reason,Status',...(data||[]).map(l=>`"${l.employees?.first_name} ${l.employees?.last_name}",${l.employees?.employee_code},${l.leave_type},${l.from_date},${l.to_date},${l.days},"${l.reason||''}",${l.status}`)], 'leave_report.csv');}
-async function incRep(){const {data}=await sb.from('incentives').select('*,employees(first_name,last_name,employee_code)').order('created_at',{ascending:false});dlCSV(['Employee,Code,Type,Amount,Period,Status',...(data||[]).map(i=>`"${i.employees?.first_name} ${i.employees?.last_name}",${i.employees?.employee_code},${i.type},${i.amount},${i.period||''},${i.status}`)], 'incentives_report.csv');}
+async function attRep(){
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data}=await sb.from('attendance').select('*').order('date',{ascending:false}).limit(500);
+  dlCSV(['Employee,Code,Date,Check In,Check Out,Hours,Type,Status',...(data||[]).map(a=>{const e=empMap[a.employee_id]||{};return `"${e.first_name||''} ${e.last_name||''}",${e.employee_code||''},${a.date},${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'},${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'},${a.hours_worked||0},${a.type},${a.status}`;})],'attendance_report.csv');
+}
+async function leaveRep(){
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data}=await sb.from('leave_requests').select('*').order('created_at',{ascending:false});
+  dlCSV(['Employee,Code,Leave Type,From,To,Days,Reason,Status',...(data||[]).map(l=>{const e=empMap[l.employee_id]||{};return `"${e.first_name||''} ${e.last_name||''}",${e.employee_code||''},${l.leave_type},${l.from_date},${l.to_date},${l.days},"${l.reason||''}",${l.status}`;})],'leave_report.csv');
+}
+async function incRep(){
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data}=await sb.from('incentives').select('*').order('created_at',{ascending:false});
+  dlCSV(['Employee,Code,Type,Amount,Period,Status',...(data||[]).map(i=>{const e=empMap[i.employee_id]||{};return `"${e.first_name||''} ${e.last_name||''}",${e.employee_code||''},${i.type},${i.amount},${i.period||''},${i.status}`;})],'incentives_report.csv');
+}
 function exportCSV(){empDir();}
 
 function dlExcel(data,filename){
