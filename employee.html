@@ -551,13 +551,15 @@ async function renderPayslip(){
   </div>
   <div class="card" style="max-width:580px">
     <div class="ct2">
-      <div style="background:linear-gradient(135deg,#1a7a2e 0%,#2d9e40 55%,#c0392b 100%);border-radius:9px 9px 0 0;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin:-2px -2px 18px">
+      <div style="background:#1C1C2E;border-radius:9px 9px 0 0;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin:-2px -2px 18px">
         <div style="display:flex;align-items:center;gap:12px">
-          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:36px;object-fit:contain">
-          <div><div style="color:white;font-size:13px;font-weight:800">Market Mavericks Trading Academy</div>
-          <div style="color:rgba(255,255,255,.75);font-size:9px;margin-top:1px">Sasthamangalam, Thiruvananthapuram | GSTIN: 32ACCFM3246L2Z9</div></div>
+          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:44px;object-fit:contain">
+          <div style="border-left:1px solid rgba(255,255,255,.15);padding-left:12px">
+            <div style="color:white;font-size:13px;font-weight:800">Market Mavericks Trading Academy</div>
+            <div style="color:rgba(255,255,255,.55);font-size:9px;margin-top:2px">Sasthamangalam, Thiruvananthapuram &nbsp;|&nbsp; GSTIN: 32ACCFM3246L2Z9</div>
+          </div>
         </div>
-        <div style="text-align:right"><div style="color:white;font-size:12px;font-weight:700">SALARY SLIP</div><div style="color:rgba(255,255,255,.75);font-size:10px">${monthYear}</div></div>
+        <div style="text-align:right"><div style="color:white;font-size:13px;font-weight:700;letter-spacing:1px">SALARY SLIP</div><div style="color:rgba(255,255,255,.65);font-size:10px;margin-top:2px">${monthYear}</div></div>
       </div></div>
       <div class="g2" style="margin-bottom:16px">
         ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' — ···· '+me.bank_account.slice(-4):'')):'Not set — Contact HR'],['PF Number',me.pf_number||'Not set — Contact HR'],['UAN Number',me.uan_number||'Not set — Contact HR']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600;font-size:13px">${vv}</div></div>`).join('')}
@@ -577,7 +579,7 @@ async function renderPayslip(){
       </div>
       ${lopDeduction>0?`<div style="background:var(--erl);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#991B1B"><i class="fas fa-triangle-exclamation"></i> LOP deduction of ₹${lopDeduction.toLocaleString('en-IN')} applied for ${lopDays} day(s) of unpaid leave this month.</div>`:''}
       ${isLastDay?`<div style="background:var(--okl);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#065F46"><i class="fas fa-check-circle"></i> Today is the last day of the month. This payslip is now final and salary will be credited on the 1st.</div>`:'<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Payslip is finalized on the last day of each month based on actual attendance and leaves.</div>'}
-      <div style="background:var(--p);color:white;border-radius:9px;padding:13px 17px;margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+      <div style="background:#1C1C2E;color:white;border-radius:9px;padding:13px 17px;margin-top:14px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:14px;font-weight:600">Net Pay</span>
         <span style="font-size:20px;font-weight:700">₹${net.toLocaleString('en-IN')}</span>
       </div>
@@ -995,7 +997,7 @@ function printEmpPayslip(){
     <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);opacity:.035;pointer-events:none;z-index:0">
       <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="width:380px">
     </div>
-    <div style="position:relative;z-index:1;background:linear-gradient(135deg,#1a7a2e 0%,#2d9e40 55%,#c0392b 100%);padding:18px 28px">
+    <div style="position:relative;z-index:1;background:#1C1C2E;padding:18px 28px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:14px">
           <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:44px;object-fit:contain">
@@ -1029,7 +1031,7 @@ function printEmpPayslip(){
     </div>
     <div style="position:relative;z-index:1;padding:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:28px">
       <div>
-        <div style="font-size:10px;font-weight:700;color:#1a7a2e;text-transform:uppercase;letter-spacing:.8px;padding-bottom:7px;border-bottom:2px solid #1a7a2e;margin-bottom:10px">Earnings</div>
+        <div style="font-size:10px;font-weight:700;color:#2d9e40;text-transform:uppercase;letter-spacing:.8px;padding-bottom:7px;border-bottom:2px solid #2d9e40;margin-bottom:10px">Earnings</div>
         ${[['Basic Pay (50%)',Math.round(sal*0.5)],['HRA (20%)',Math.round(sal*0.2)],['Special Allowance (20%)',Math.round(sal*0.2)],['Transport Allowance (10%)',Math.round(sal*0.1)]].map(([k,val])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f3f3;font-size:13px"><span style="color:#555">${k}</span><span style="font-weight:600">₹${val.toLocaleString('en-IN')}</span></div>`).join('')}
         <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-size:13px;font-weight:700;border-top:2px solid #111;margin-top:5px"><span>Gross Earnings</span><span style="color:#1a7a2e">₹${sal.toLocaleString('en-IN')}</span></div>
       </div>
@@ -1039,7 +1041,7 @@ function printEmpPayslip(){
         <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-size:13px;font-weight:700;border-top:2px solid #111;margin-top:5px"><span>Total Deductions</span><span style="color:#c0392b">₹${lopDed.toLocaleString('en-IN')}</span></div>
       </div>
     </div>
-    <div style="position:relative;z-index:1;margin:0 28px 20px;background:linear-gradient(135deg,#1a7a2e,#2d9e40);border-radius:10px;padding:15px 22px;display:flex;justify-content:space-between;align-items:center">
+    <div style="position:relative;z-index:1;margin:0 28px 20px;background:#1C1C2E;border-radius:10px;padding:15px 22px;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="color:rgba(255,255,255,.75);font-size:10px;text-transform:uppercase;letter-spacing:.8px">Net Pay — ${monthYear}</div>
         <div style="color:rgba(255,255,255,.6);font-size:10px;margin-top:3px">Amount to be credited to your bank account</div>

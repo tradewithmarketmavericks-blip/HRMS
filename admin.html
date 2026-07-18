@@ -829,20 +829,20 @@ function buildPayslipHTML(e,sal,lopDays,perDay,lopDed,net,monthYear,now){
       <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="width:380px">
     </div>
     <!-- Header -->
-    <div style="position:relative;z-index:1;background:linear-gradient(135deg,#1a7a2e 0%,#2d9e40 55%,#c0392b 100%);padding:18px 28px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="position:relative;z-index:1;background:#1C1C2E;padding:18px 28px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:14px">
-          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:44px;object-fit:contain">
-          <div>
+          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:50px;object-fit:contain">
+          <div style="border-left:1px solid rgba(255,255,255,.15);padding-left:14px">
             <div style="color:white;font-size:15px;font-weight:800;letter-spacing:-.2px">Market Mavericks Trading Academy</div>
-            <div style="color:rgba(255,255,255,.8);font-size:10px;margin-top:2px">Sasthamangalam, Thiruvananthapuram, Kerala</div>
-            <div style="color:rgba(255,255,255,.7);font-size:10px">GSTIN: 32ACCFM3246L2Z9 &nbsp;|&nbsp; marketmavericks.co.in</div>
+            <div style="color:rgba(255,255,255,.6);font-size:10px;margin-top:3px">Sasthamangalam, Thiruvananthapuram, Kerala</div>
+            <div style="color:rgba(255,255,255,.5);font-size:10px;margin-top:1px">GSTIN: 32ACCFM3246L2Z9 &nbsp;|&nbsp; marketmavericks.co.in</div>
           </div>
         </div>
         <div style="text-align:right">
-          <div style="color:white;font-size:20px;font-weight:800;letter-spacing:1.5px">SALARY SLIP</div>
-          <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:3px">${monthYear}</div>
-          <div style="color:rgba(255,255,255,.65);font-size:10px;margin-top:2px">Slip ID: ${slipId}</div>
+          <div style="color:white;font-size:20px;font-weight:800;letter-spacing:2px">SALARY SLIP</div>
+          <div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:4px">${monthYear}</div>
+          <div style="color:rgba(255,255,255,.45);font-size:10px;margin-top:2px">Slip ID: ${slipId}</div>
         </div>
       </div>
     </div>
@@ -865,7 +865,7 @@ function buildPayslipHTML(e,sal,lopDays,perDay,lopDed,net,monthYear,now){
     <!-- Earnings & Deductions -->
     <div style="position:relative;z-index:1;padding:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:28px">
       <div>
-        <div style="font-size:10px;font-weight:700;color:#1a7a2e;text-transform:uppercase;letter-spacing:.8px;padding-bottom:7px;border-bottom:2px solid #1a7a2e;margin-bottom:10px">Earnings</div>
+        <div style="font-size:10px;font-weight:700;color:#2d9e40;text-transform:uppercase;letter-spacing:.8px;padding-bottom:7px;border-bottom:2px solid #2d9e40;margin-bottom:10px">Earnings</div>
         ${[
           ['Basic Pay (50%)', Math.round(sal*0.5)],
           ['HRA (20%)', Math.round(sal*0.2)],
@@ -873,7 +873,7 @@ function buildPayslipHTML(e,sal,lopDays,perDay,lopDed,net,monthYear,now){
           ['Transport Allowance (10%)', Math.round(sal*0.1)],
         ].map(([k,val])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f3f3f3;font-size:13px"><span style="color:#555">${k}</span><span style="font-weight:600">₹${val.toLocaleString('en-IN')}</span></div>`).join('')}
         <div style="display:flex;justify-content:space-between;padding:7px 0 0;font-size:13px;font-weight:700;border-top:2px solid #111;margin-top:5px">
-          <span>Gross Earnings</span><span style="color:#1a7a2e">₹${sal.toLocaleString('en-IN')}</span>
+          <span>Gross Earnings</span><span style="color:#2d9e40">₹${sal.toLocaleString('en-IN')}</span>
         </div>
       </div>
       <div>
@@ -891,7 +891,7 @@ function buildPayslipHTML(e,sal,lopDays,perDay,lopDed,net,monthYear,now){
       </div>
     </div>
     <!-- Net Pay -->
-    <div style="position:relative;z-index:1;margin:0 28px 20px;background:linear-gradient(135deg,#1a7a2e,#2d9e40);border-radius:10px;padding:15px 22px;display:flex;justify-content:space-between;align-items:center">
+    <div style="position:relative;z-index:1;margin:0 28px 20px;background:#1C1C2E;border-radius:10px;padding:15px 22px;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="color:rgba(255,255,255,.75);font-size:10px;text-transform:uppercase;letter-spacing:.8px">Net Pay — ${monthYear}</div>
         <div style="color:rgba(255,255,255,.6);font-size:10px;margin-top:3px">Amount to be credited to your bank account</div>
