@@ -319,6 +319,15 @@ async function clockAction(btnId,dotId,txtId){
   const specialDayName=isWeeklyOff?'your weekly off day':todayHoliday?todayHoliday.name:compOff?.name;
 
   if(!clockedIn){
+    // Check if employee has approved leave today
+    const onLeave=myLeaves.find(l=>{
+      if(l.status!=='approved')return false;
+      return today>=l.from_date&&today<=l.to_date;
+    });
+    if(onLeave){
+      toast(`You have approved ${onLeave.leave_type} today. Cannot clock in while on leave.`,'wa');
+      if(btn)btn.disabled=false;return;
+    }
     const now=new Date();
     const {error}=await sb.from('attendance').upsert({employee_id:me.id,date:today,check_in:now.toISOString(),status:'present',type:'Office'},{onConflict:'employee_id,date'});
     if(error){toast('Error: '+error.message,'er');if(btn)btn.disabled=false;return;}
@@ -553,14 +562,15 @@ async function renderPayslip(){
   <div class="card" style="max-width:580px">
     <div class="ct2">
       <div style="background:#1C1C2E;border-radius:9px 9px 0 0;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin:-2px -2px 18px">
-        <div style="display:flex;align-items:center;gap:12px">
-          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:44px;object-fit:contain">
-          <div style="border-left:1px solid rgba(255,255,255,.15);padding-left:12px">
-            <div style="color:white;font-size:13px;font-weight:800">Market Mavericks Trading Academy</div>
-            <div style="color:rgba(255,255,255,.55);font-size:9px;margin-top:2px">Sasthamangalam, Thiruvananthapuram &nbsp;|&nbsp; GSTIN: 32ACCFM3246L2Z9</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:56px;width:56px;object-fit:contain;flex-shrink:0">
+          <div style="border-left:1px solid rgba(255,255,255,.2);padding-left:14px">
+            <div style="color:white;font-size:14px;font-weight:800;line-height:1.2">Market Mavericks Trading Academy</div>
+            <div style="color:rgba(255,255,255,.55);font-size:9px;margin-top:4px">Sasthamangalam, Thiruvananthapuram, Kerala</div>
+            <div style="color:rgba(255,255,255,.45);font-size:9px;margin-top:1px">GSTIN: 32ACCFM3246L2Z9 &nbsp;|&nbsp; marketmavericks.co.in</div>
           </div>
         </div>
-        <div style="text-align:right"><div style="color:white;font-size:13px;font-weight:700;letter-spacing:1px">SALARY SLIP</div><div style="color:rgba(255,255,255,.65);font-size:10px;margin-top:2px">${monthYear}</div></div>
+        <div style="text-align:right"><div style="color:white;font-size:14px;font-weight:700;letter-spacing:1.5px">SALARY SLIP</div><div style="color:rgba(255,255,255,.65);font-size:11px;margin-top:3px">${monthYear}</div></div>
       </div>
       <div class="g2" style="margin-bottom:16px">
         ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' — ···· '+me.bank_account.slice(-4):'')):'Not set — Contact HR'],['PF Number',me.pf_number||'Not set — Contact HR'],['UAN Number',me.uan_number||'Not set — Contact HR']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600;font-size:13px">${vv}</div></div>`).join('')}
@@ -1001,7 +1011,7 @@ function printEmpPayslip(){
     <div style="position:relative;z-index:1;background:#1C1C2E;padding:18px 28px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:14px">
-          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:44px;object-fit:contain">
+          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:60px;width:60px;object-fit:contain;flex-shrink:0">
           <div>
             <div style="color:white;font-size:15px;font-weight:800">Market Mavericks Trading Academy</div>
             <div style="color:rgba(255,255,255,.8);font-size:10px;margin-top:2px">Sasthamangalam, Thiruvananthapuram, Kerala</div>

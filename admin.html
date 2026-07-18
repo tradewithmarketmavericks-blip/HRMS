@@ -243,14 +243,15 @@ function navigate(pg){
 // ─── DASHBOARD ───
 async function renderDashboard(){
   const today=new Date().toISOString().split('T')[0];
-  const [pendingLeaves,presentToday,recentLeaves,upcoming,anns,hwRequests]=await Promise.all([
+  const [pendingLeaves,presentToday,recentLeaves,anns,hwRequests]=await Promise.all([
     sb.from('leave_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
     sb.from('attendance').select('id',{count:'exact',head:true}).eq('date',today).eq('status','present'),
-    sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,department)').eq('status','pending').limit(5).order('created_at',{ascending:false}),
-    Promise.resolve(holidays.filter(h=>h.date>=today).slice(0,5)),
+    sb.from('leave_requests').select('*').eq('status','pending').limit(5).order('created_at',{ascending:false}),
     sb.from('announcements').select('*').order('created_at',{ascending:false}).limit(3),
-    sb.from('holiday_work_requests').select('*,employees(first_name,last_name,avatar_color)').eq('status','pending').order('created_at',{ascending:false}),
+    sb.from('holiday_work_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
   ]);
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const upcoming=holidays.filter(h=>h.date>=today).slice(0,5);
   const active=employees.filter(e=>e.status==='active').length;
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>Admin Dashboard</h2><p>${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></div>
@@ -264,30 +265,32 @@ async function renderDashboard(){
   <div class="g2">
     <div>
       <div class="card" style="margin-bottom:16px"><div class="ch"><span class="ctitle">Pending Leave Requests</span></div><div class="ct2">
-        ${recentLeaves.data&&recentLeaves.data.length?recentLeaves.data.map(l=>`
-        <div class="ri"><div class="flex gap2">
-          <div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${ini(l.employees?.first_name,l.employees?.last_name)}</div>
-          <div><div style="font-weight:600;font-size:13px">${l.employees?.first_name} ${l.employees?.last_name}</div>
+        ${recentLeaves.data&&recentLeaves.data.length?recentLeaves.data.map(l=>{
+          const emp=empMap[l.employee_id]||{};
+          return `<div class="ri"><div class="flex gap2">
+          <div class="av32" style="background:${emp.avatar_color||'#4F46E5'}">${ini(emp.first_name,emp.last_name)}</div>
+          <div><div style="font-weight:600;font-size:13px">${emp.first_name||'Unknown'} ${emp.last_name||''}</div>
           <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fd(l.from_date)}</div></div></div>
           <div class="flex gap2">
             <button class="btn bg2 bsm bic apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" data-paid="false" title="Approve"><i class="fas fa-check"></i></button>
             <button class="btn bp bsm apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" data-paid="true" title="Approve as Paid" style="font-size:11px;padding:4px 7px"><i class="fas fa-coins"></i></button>
             <button class="btn bd2 bsm bic rej-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Reject"><i class="fas fa-times"></i></button>
-          </div></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending leave requests</div>'}
+          </div></div>`;}).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending leave requests</div>'}
       </div></div>
       <div class="card"><div class="ch"><span class="ctitle">Holiday Work Requests</span><span class="bx wa">${hwRequests.data?.length||0} pending</span></div><div class="ct2">
-        ${hwRequests.data&&hwRequests.data.length?hwRequests.data.map(h=>`
-        <div class="ri"><div class="flex gap2">
-          <div class="av32" style="background:${h.employees?.avatar_color||'#4F46E5'}">${ini(h.employees?.first_name,h.employees?.last_name)}</div>
-          <div><div style="font-weight:600;font-size:13px">${h.employees?.first_name} ${h.employees?.last_name}</div>
+        ${hwRequests.data&&hwRequests.data.length?hwRequests.data.map(h=>{
+          const emp=empMap[h.employee_id]||{};
+          return `<div class="ri"><div class="flex gap2">
+          <div class="av32" style="background:${emp.avatar_color||'#4F46E5'}">${ini(emp.first_name,emp.last_name)}</div>
+          <div><div style="font-weight:600;font-size:13px">${emp.first_name||'Unknown'} ${emp.last_name||''}</div>
           <div style="font-size:12px;color:var(--tm)">${h.holiday_name} · ${fd(h.holiday_date)} · ${h.hours_worked}h worked</div>
           ${h.reason?`<div style="font-size:11px;color:var(--tl)">${h.reason}</div>`:''}
           </div></div>
           <div class="flex gap2">
-            <button class="btn bg2 bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','comp_off')" title="Grant Comp Off"><i class="fas fa-arrows-rotate"></i> Comp Off</button>
-            <button class="btn bp bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','double_pay')" title="Grant Double Pay"><i class="fas fa-money-bill"></i> 2x Pay</button>
-            <button class="btn bd2 bsm bic" onclick="rejectHolidayWork('${h.id}')" title="Reject"><i class="fas fa-times"></i></button>
-          </div></div>`).join(''):'<div class="empty"><i class="fas fa-umbrella-beach"></i>No holiday work requests</div>'}
+            <button class="btn bg2 bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','comp_off')"><i class="fas fa-arrows-rotate"></i> Comp Off</button>
+            <button class="btn bp bsm" onclick="approveHolidayWork('${h.id}','${h.employee_id}','double_pay')"><i class="fas fa-money-bill"></i> 2x Pay</button>
+            <button class="btn bd2 bsm bic" onclick="rejectHolidayWork('${h.id}')"><i class="fas fa-times"></i></button>
+          </div></div>`;}).join(''):'<div class="empty"><i class="fas fa-umbrella-beach"></i>No holiday work requests</div>'}
       </div></div>
     </div>
     <div class="card"><div class="ch"><span class="ctitle">Upcoming Holidays</span></div><div class="ct2">
@@ -832,7 +835,7 @@ function buildPayslipHTML(e,sal,lopDays,perDay,lopDed,net,monthYear,now){
     <div style="position:relative;z-index:1;background:#1C1C2E;padding:18px 28px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:14px">
-          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:50px;object-fit:contain">
+          <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="height:60px;width:60px;object-fit:contain;flex-shrink:0">
           <div style="border-left:1px solid rgba(255,255,255,.15);padding-left:14px">
             <div style="color:white;font-size:15px;font-weight:800;letter-spacing:-.2px">Market Mavericks Trading Academy</div>
             <div style="color:rgba(255,255,255,.6);font-size:10px;margin-top:3px">Sasthamangalam, Thiruvananthapuram, Kerala</div>
