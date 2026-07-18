@@ -150,7 +150,8 @@ tr:last-child td{border-bottom:none}
       <div class="ni" data-pg="payslip"><i class="fas fa-file-invoice-dollar"></i>Payslip</div>
       <div class="ni" data-pg="holidays"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing Check-in</div>
-      <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
+      <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements <span id="ann-badge" style="display:none;background:#EF4444;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">!</span></div>
+      <div class="ni" data-pg="documents"><i class="fas fa-folder-open"></i>My Documents</div>
       <div class="ni" data-pg="directory"><i class="fas fa-address-book"></i>Directory</div>
       <div class="ni" data-pg="myteam" id="nav-myteam" style="display:none"><i class="fas fa-users-gear"></i>My Team</div>
       <div class="nl">Account</div>
@@ -190,6 +191,7 @@ async function init(){
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
   document.getElementById('sb-role').textContent=me.designation||me.department||'Employee';
   await Promise.all([loadMyData(),loadHolidays(),loadAllEmp(),loadCompanyOffs()]);
+  await updateAnnBadge();
   // Show My Team tab only for managers
   if(me.is_manager){
     const teamNav=document.getElementById('nav-myteam');
@@ -224,11 +226,11 @@ async function loadAllEmp(){const {data}=await sb.from('employees').select('id,f
 
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
-  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',myteam:'My Team',profile:'My Profile'};
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',documents:'My Documents',myteam:'My Team',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   clearInterval(clockTimer);
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,myteam:renderMyTeam,profile:renderProfile})[pg]?.();
+  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,documents:renderMyDocuments,myteam:renderMyTeam,profile:renderProfile})[pg]?.();
 }
 
 // ─── DASHBOARD ───
@@ -1079,6 +1081,73 @@ function printEmpPayslip(){
   setTimeout(()=>{w.print();},600);
 }
 
+
+// ─── ANNOUNCEMENT BADGE ───
+async function updateAnnBadge(){
+  const {data:anns}=await sb.from('announcements').select('id').order('created_at',{ascending:false}).limit(20);
+  if(!anns||!anns.length){hideBadge();return;}
+  const {data:reads}=await sb.from('announcement_reads').select('announcement_id').eq('employee_id',me.id);
+  const readIds=new Set((reads||[]).map(r=>r.announcement_id));
+  const unread=anns.filter(a=>!readIds.has(a.id)).length;
+  const badge=document.getElementById('ann-badge');
+  if(badge){badge.style.display=unread>0?'inline-flex':'none';badge.textContent=unread;}
+}
+function hideBadge(){const b=document.getElementById('ann-badge');if(b)b.style.display='none';}
+
+// Override renderAnnouncements to mark as read
+const _origRenderAnn=renderAnnouncements;
+async function renderAnnouncements(){
+  await _origRenderAnn?.();
+  // Mark all as read
+  const {data:anns}=await sb.from('announcements').select('id');
+  if(anns&&anns.length){
+    const reads=anns.map(a=>({announcement_id:a.id,employee_id:me.id}));
+    await sb.from('announcement_reads').upsert(reads,{onConflict:'announcement_id,employee_id',ignoreDuplicates:true});
+    hideBadge();
+  }
+}
+
+// ─── MY DOCUMENTS ───
+async function renderMyDocuments(){
+  const {data:docs}=await sb.from('documents').select('*').eq('employee_id',me.id).order('created_at',{ascending:false});
+  const {data:checklist}=await sb.from('onboarding_checklist').select('*').eq('employee_id',me.id).order('created_at');
+  const done=checklist?checklist.filter(i=>i.completed).length:0;
+  const total=checklist?checklist.length:0;
+  const pct=total?Math.round((done/total)*100):0;
+  const typeLabel={offer_letter:'Offer Letter',appraisal:'Appraisal',id_proof:'ID Proof',salary_certificate:'Salary Certificate',nda:'NDA',other:'Other'};
+  const typeColor={offer_letter:'bl',appraisal:'pu',id_proof:'ok',salary_certificate:'wa',nda:'er',other:'gy'};
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>My Documents</h2><p>Documents shared by HR and your uploads</p></div></div>
+  ${checklist&&checklist.length?`<div class="card" style="margin-bottom:16px">
+    <div class="ch"><span class="ctitle"><i class="fas fa-list-check"></i> Onboarding Checklist</span><span class="bx ${pct===100?'ok':'wa'}">${pct}% Complete</span></div>
+    <div class="ct2">
+      <div class="prog" style="margin-bottom:14px"><div class="pb" style="width:${pct}%;background:${pct===100?'var(--ok)':'var(--p)'}"></div></div>
+      ${checklist.map(item=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <i class="fas fa-${item.completed?'check-circle':'circle'}" style="color:${item.completed?'var(--ok)':'var(--bd)'};font-size:16px"></i>
+        <span style="font-size:13px;${item.completed?'text-decoration:line-through;color:var(--tl)':''}">${item.item}</span>
+        ${!item.completed?`<a href="#" onclick="event.preventDefault();nav('profile')" style="font-size:11px;color:var(--p);margin-left:auto">Complete →</a>`:''}
+      </div>`).join('')}
+      ${pct===100?`<div style="background:var(--okl);color:#065F46;border-radius:7px;padding:10px;font-size:12px;margin-top:10px;text-align:center"><i class="fas fa-party-horn"></i> Onboarding complete! Welcome to Market Mavericks.</div>`:''}
+    </div>
+  </div>`:''}
+  <div class="card"><div class="ch"><span class="ctitle">My Documents</span></div>
+    <div class="ct2">
+      ${docs&&docs.length?`<div class="g3">${docs.map(d=>`
+        <div class="card" style="border:1px solid var(--bd)">
+          <div class="ct2" style="padding:14px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="width:36px;height:36px;background:var(--pl);border-radius:7px;display:flex;align-items:center;justify-content:center"><i class="fas fa-file-alt" style="color:var(--p)"></i></div>
+              <span class="bx ${typeColor[d.doc_type]||'gy'}">${typeLabel[d.doc_type]||'Other'}</span>
+            </div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px">${d.file_name||d.name||'Document'}</div>
+            <div style="font-size:11px;color:var(--tl);margin-bottom:10px">${d.created_at?fd(d.created_at.split('T')[0]):''}</div>
+            ${d.file_url?`<div class="flex gap2"><a href="${d.file_url}" target="_blank" class="btn bo bsm"><i class="fas fa-eye"></i> View</a><a href="${d.file_url}" download class="btn bp bsm"><i class="fas fa-download"></i> Download</a></div>`:'<span style="font-size:12px;color:var(--tl)">No file attached</span>'}
+          </div>
+        </div>`).join('')}</div>`
+      :'<div class="empty"><i class="fas fa-folder-open"></i><div>No documents yet. HR will upload your documents here.</div></div>'}
+    </div>
+  </div>`;
+}
 
 // ─── HELPERS ───
 function buildCal(){

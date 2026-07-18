@@ -164,6 +164,7 @@ textarea.i{resize:vertical;min-height:76px}
       <div class="nl">People</div>
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
       <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
+      <div class="ni" data-pg="documents"><i class="fas fa-folder-open"></i>Documents</div>
       <div class="ni" data-pg="reports"><i class="fas fa-chart-bar"></i>Reports</div>
     </nav>
     <div class="sb-ft"><div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div></div>
@@ -238,7 +239,7 @@ function navigate(pg){
   const titles={dashboard:'Dashboard',employees:'Employees',attendance:'Attendance',leaves:'Leave Management',payroll:'Payroll',incentives:'Bonuses & Incentives',holidays:'Holiday Calendar',departments:'Departments',wellbeing:'Employee Wellbeing',announcements:'Announcements',reports:'Reports & Analytics'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,reports:renderReports})[pg]?.();
+  ({dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,documents:renderDocuments,reports:renderReports})[pg]?.();
 }
 
 // ─── DASHBOARD ───
@@ -343,6 +344,7 @@ function empRow(e){
     <td><div class="flex gap2">
       <button class="btn bo bsm bic" onclick="viewEmp('${e.id}')" title="View"><i class="fas fa-eye"></i></button>
       <button class="btn bo bsm bic" onclick="openEditEmployee('${e.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+      <button class="btn bo bsm bic" onclick="openOnboardingChecklist('${e.id}')" title="Onboarding Checklist"><i class="fas fa-list-check"></i></button>
       <button class="btn bd2 bsm bic del-emp-btn" data-id="${e.id}" data-name="${safeName}" title="Delete"><i class="fas fa-trash"></i></button>
     </div></td>
   </tr>`;
@@ -459,7 +461,11 @@ async function saveNewEmployee(){
     {employee_id:emp.id,leave_type:'Comp Off',total_days:0,year:yr},
     {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
   ]);
-
+  await sb.from('leave_balances').insert({employee_id:emp.id,leave_type:'LOP',total_days:0,used_days:0,year:yr}).select().maybeSingle();
+  // Seed onboarding checklist
+  const checklistItems=['Submit bank account details','Submit PF/UAN details','Complete ID verification','Sign employment contract / NDA','Upload profile photo','Read and acknowledge HR policy','Set up company email','Complete onboarding orientation'];
+  await sb.from('onboarding_checklist').insert(checklistItems.map(item=>({employee_id:emp.id,item,completed:false})));
+  // Send password reset so employee sets their own password
   const redirectUrl=window.location.href.replace('admin.html','index.html');
   await sbReg.auth.resetPasswordForEmail(em,{redirectTo:redirectUrl});
 
@@ -757,25 +763,32 @@ async function actRegularisation(id,empId,date,checkIn,checkOut,status){
 async function renderPayroll(){
   const activeEmps=employees.filter(e=>['active','on-leave','probation'].includes(e.status));
   const totalGross=activeEmps.reduce((s,e)=>s+(e.gross_salary||0),0);
-  // Fetch LOP for all employees this month
   const now=new Date();
-  const {data:lopData}=await sb.from('leave_balances').select('employee_id,used_days').eq('leave_type','LOP').eq('year',now.getFullYear());
+  const curMonth=now.getMonth()+1;
+  const curYear=now.getFullYear();
+  const [{data:lopData},{data:lockData}]=await Promise.all([
+    sb.from('leave_balances').select('employee_id,used_days').eq('leave_type','LOP').eq('year',curYear),
+    sb.from('payroll').select('locked,locked_at').eq('month',curMonth).eq('year',curYear).limit(1),
+  ]);
   const lopMap={};(lopData||[]).forEach(l=>lopMap[l.employee_id]=l.used_days||0);
+  const isLocked=lockData&&lockData.length&&lockData[0].locked;
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Payroll</h2></div>
+  <div class="ph"><div><h2>Payroll</h2>${isLocked?`<div style="display:inline-flex;align-items:center;gap:6px;background:var(--erl);color:var(--er);border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;margin-top:6px"><i class="fas fa-lock"></i> ${now.toLocaleString('default',{month:'long'})} payroll is locked</div>`:''}</div>
     <div class="flex gap2">
       <select class="i" style="width:140px" id="pr-month">
         ${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i===now.getMonth()?'selected':''}>${new Date(2026,i).toLocaleString('default',{month:'long'})}</option>`).join('')}
       </select>
-      <select class="i" style="width:90px" id="pr-year"><option>${now.getFullYear()}</option><option>${now.getFullYear()-1}</option><option>${now.getFullYear()+1}</option></select>
-      <button class="btn bp" onclick="runPayroll()"><i class="fas fa-paper-plane"></i> Run Payroll</button>
+      <select class="i" style="width:90px" id="pr-year"><option>${curYear}</option><option>${curYear-1}</option><option>${curYear+1}</option></select>
+      ${isLocked?'<span class="btn bo bsm" style="opacity:.5;cursor:not-allowed"><i class="fas fa-lock"></i> Locked</span>':`<button class="btn bp" onclick="runPayroll()"><i class="fas fa-paper-plane"></i> Run Payroll</button>
+      <button class="btn bd2" onclick="lockPayroll()"><i class="fas fa-lock"></i> Lock</button>`}
+      <button class="btn bo" onclick="runYearEndRollover()" title="Reset leave balances for new year"><i class="fas fa-rotate"></i> Year-End</button>
     </div>
   </div>
   <div class="sg">
     <div class="sc b" style="cursor:pointer" onclick="navigate('employees')"><div class="sl">Gross Payroll</div><div class="sv">₹${(totalGross/1000).toFixed(0)}K</div><div class="ss">Per month</div><div class="si"><i class="fas fa-money-bill-wave"></i></div></div>
     <div class="sc g" style="cursor:pointer" onclick="navigate('employees')"><div class="sl">Employees</div><div class="sv">${activeEmps.length}</div><div class="ss">On payroll</div><div class="si"><i class="fas fa-users"></i></div></div>
     <div class="sc a" style="cursor:pointer" onclick="navigate('leaves')"><div class="sl">LOP Cases</div><div class="sv">${Object.values(lopMap).filter(v=>v>0).length}</div><div class="ss">This month</div><div class="si"><i class="fas fa-triangle-exclamation"></i></div></div>
-    <div class="sc r" style="cursor:pointer" onclick="downloadPayslipExcel()"><div class="sl">Download</div><div class="sv"><i class="fas fa-file-excel" style="font-size:22px"></i></div><div class="ss">All payslips Excel</div><div class="si"><i class="fas fa-download"></i></div></div>
+    <div class="sc ${isLocked?'r':'g'}" style="cursor:pointer" onclick="downloadPayslipExcel()"><div class="sl">${isLocked?'🔒 Locked':'Download'}</div><div class="sv"><i class="fas fa-file-excel" style="font-size:22px"></i></div><div class="ss">All payslips Excel</div><div class="si"><i class="fas fa-download"></i></div></div>
   </div>
   <div class="card"><div class="ch"><span class="ctitle">Salary Structure — ${now.toLocaleString('default',{month:'long',year:'numeric'})}</span></div>
   <div class="tw"><table><thead><tr><th>Employee</th><th>Department</th><th>Gross</th><th>LOP Days</th><th>LOP Deduction</th><th>Net Pay</th><th>Payslip</th></tr></thead>
@@ -799,14 +812,38 @@ function runPayroll(){
     const now=new Date();
     const month=parseInt(v('pr-month'))||now.getMonth()+1;
     const year=parseInt(v('pr-year'))||now.getFullYear();
-    const rows=employees.filter(e=>['active','on-leave','probation'].includes(e.status)).map(e=>({
-      employee_id:e.id,month,year,gross_salary:e.gross_salary||0,
-      tax_deduction:e.tax_amount||0,status:'processed',processed_at:now.toISOString()
-    }));
+    // Check if already locked
+    const {data:existing}=await sb.from('payroll').select('locked').eq('month',month).eq('year',year).limit(1);
+    if(existing&&existing.length&&existing[0].locked){toast('Payroll for this month is locked and cannot be reprocessed.','wa');return;}
+    const rows=employees.filter(e=>['active','on-leave','probation'].includes(e.status)).map(e=>{
+      const sal=e.gross_salary||0;
+      const lopDays=lopMap?.[e.id]||0;
+      const lopDed=lopDays*Math.round(sal/26);
+      return {employee_id:e.id,month,year,gross_salary:sal,lop_days:lopDays,lop_deduction:lopDed,net_pay:sal-lopDed,status:'processed',processed_at:now.toISOString()};
+    });
     const {error}=await sb.from('payroll').upsert(rows,{onConflict:'employee_id,month,year'});
     if(error){toast('Error: '+error.message,'er');return;}
-    toast(`Payroll processed for ${new Date(year,month-1).toLocaleString('default',{month:'long'})} ${year}!`,'ok');
+    toast(`Payroll processed for ${new Date(year,month-1).toLocaleString('default',{month:'long'})} ${year}! Lock it when ready.`,'ok');
+    renderPayroll();
   },'Process Payroll','bp');
+}
+
+async function lockPayroll(){
+  const month=parseInt(v('pr-month'))||new Date().getMonth()+1;
+  const year=parseInt(v('pr-year'))||new Date().getFullYear();
+  confirm2('Lock Payroll?',`Lock payroll for ${new Date(year,month-1).toLocaleString('default',{month:'long'})} ${year}? This cannot be undone — no further edits will be possible.`,async()=>{
+    const {error}=await sb.from('payroll').update({locked:true,locked_by:me.id,locked_at:new Date().toISOString()}).eq('month',month).eq('year',year);
+    if(error){toast('Error: '+error.message,'er');return;}
+    toast('Payroll locked successfully.','ok');renderPayroll();
+  },'Lock Payroll','bd2');
+}
+
+async function runYearEndRollover(){
+  confirm2('Year-End Rollover?','This will reset CL and SL for the new year, and carry forward unused Comp Off (up to 5 days) for all active employees.',async()=>{
+    const {data,error}=await sb.rpc('year_end_rollover');
+    if(error){toast('Error: '+error.message,'er');return;}
+    toast(`Year-end rollover complete! ${data.employees_processed} employees processed for ${data.new_year}.`,'ok');
+  },'Run Rollover','bp');
 }
 
 async function viewPayslip(empId){
@@ -1337,6 +1374,147 @@ async function saveAnn(){
   closeMo();toast('Announcement posted!','ok');renderAnnouncements();
 }
 
+// ─── DOCUMENTS ───
+async function renderDocuments(){
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
+  const {data:docs}=await sb.from('documents').select('*').order('created_at',{ascending:false});
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>Documents</h2><p>Employee documents and company files</p></div>
+    <button class="btn bp" onclick="openUploadDoc()"><i class="fas fa-upload"></i> Upload Document</button></div>
+  <div class="flex gap2" style="margin-bottom:16px">
+    <select class="i" style="width:180px" id="doc-emp-filter" onchange="filterDocs()">
+      <option value="">All Employees</option>
+      ${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name}</option>`).join('')}
+    </select>
+    <select class="i" style="width:160px" id="doc-type-filter" onchange="filterDocs()">
+      <option value="">All Types</option>
+      <option value="offer_letter">Offer Letter</option>
+      <option value="appraisal">Appraisal</option>
+      <option value="id_proof">ID Proof</option>
+      <option value="salary_certificate">Salary Certificate</option>
+      <option value="nda">NDA</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <div id="doc-grid" class="g3">
+    ${docs&&docs.length?docs.map(d=>{
+      const emp=empMap[d.employee_id]||{};
+      const typeLabel={offer_letter:'Offer Letter',appraisal:'Appraisal',id_proof:'ID Proof',salary_certificate:'Salary Certificate',nda:'NDA',other:'Other'};
+      const typeColor={offer_letter:'bl',appraisal:'pu',id_proof:'ok',salary_certificate:'wa',nda:'er',other:'gy'};
+      return `<div class="card doc-card" data-emp="${d.employee_id||''}" data-type="${d.doc_type||'other'}">
+        <div class="ct2">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+            <div style="width:40px;height:40px;background:var(--pl);border-radius:8px;display:flex;align-items:center;justify-content:center"><i class="fas fa-file-alt" style="color:var(--p);font-size:18px"></i></div>
+            <span class="bx ${typeColor[d.doc_type]||'gy'}">${typeLabel[d.doc_type]||'Other'}</span>
+          </div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">${d.file_name||d.name||'Document'}</div>
+          <div style="font-size:12px;color:var(--tm);margin-bottom:10px">${emp.first_name?emp.first_name+' '+emp.last_name:'Company-wide'}</div>
+          <div style="font-size:11px;color:var(--tl);margin-bottom:12px">${d.created_at?fd(d.created_at.split('T')[0]):''}</div>
+          <div class="flex gap2">
+            ${d.file_url?`<a href="${d.file_url}" target="_blank" class="btn bo bsm"><i class="fas fa-eye"></i> View</a>
+            <a href="${d.file_url}" download class="btn bp bsm"><i class="fas fa-download"></i></a>`:'<span style="font-size:12px;color:var(--tl)">No file attached</span>'}
+            <button class="btn bd2 bsm bic del-doc-btn" data-id="${d.id}"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join(''):`<div style="grid-column:1/-1"><div class="empty"><i class="fas fa-folder-open"></i><div>No documents uploaded yet</div></div></div>`}
+  </div>`;
+}
+
+function filterDocs(){
+  const emp=document.getElementById('doc-emp-filter')?.value||'';
+  const type=document.getElementById('doc-type-filter')?.value||'';
+  document.querySelectorAll('.doc-card').forEach(c=>{
+    const eMatch=!emp||c.dataset.emp===emp;
+    const tMatch=!type||c.dataset.type===type;
+    c.style.display=eMatch&&tMatch?'':'none';
+  });
+}
+
+function openUploadDoc(){
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Upload Document</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="fr f1"><div><label class="lbl">Employee</label><select class="i" id="doc-emp"><option value="">Company-wide</option>${employees.map(e=>`<option value="${e.id}">${e.first_name} ${e.last_name} (${e.employee_code})</option>`).join('')}</select></div></div>
+    <div class="fr"><div><label class="lbl">Document Type</label><select class="i" id="doc-type"><option value="offer_letter">Offer Letter</option><option value="appraisal">Appraisal</option><option value="id_proof">ID Proof</option><option value="salary_certificate">Salary Certificate</option><option value="nda">NDA</option><option value="other">Other</option></select></div>
+    <div><label class="lbl">Document Name</label><input class="i" id="doc-name" placeholder="e.g. Offer Letter - July 2026"></div></div>
+    <div class="fr f1"><div><label class="lbl">Upload File</label><input class="i" type="file" id="doc-file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg"></div></div>
+    <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Files are stored securely. Max size: 10MB. Supported: PDF, Word, Images.</div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="upload-doc-btn" onclick="uploadDocument()"><i class="fas fa-upload"></i> Upload</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function uploadDocument(){
+  const empId=v('doc-emp')||null;
+  const name=v('doc-name');
+  const file=document.getElementById('doc-file')?.files[0];
+  if(!name){toast('Enter a document name','wa');return;}
+  setBtnLoad('upload-doc-btn',true,'Uploading…');
+  let fileUrl=null,fileName=null,fileSize=null;
+  if(file){
+    if(file.size>10*1024*1024){toast('File too large. Max 10MB.','wa');setBtnLoad('upload-doc-btn',false,'Upload');return;}
+    const ext=file.name.split('.').pop();
+    const path=`${empId||'company'}/${Date.now()}.${ext}`;
+    const {data:up,error:upErr}=await sb.storage.from('documents').upload(path,file,{upsert:true});
+    if(upErr){toast('Upload error: '+upErr.message,'er');setBtnLoad('upload-doc-btn',false,'Upload');return;}
+    const {data:urlData}=sb.storage.from('documents').getPublicUrl(path);
+    fileUrl=urlData?.publicUrl;fileName=file.name;fileSize=file.size;
+  }
+  const {error}=await sb.from('documents').insert({
+    employee_id:empId,name,file_name:fileName||name,
+    file_url:fileUrl,file_size:fileSize,
+    doc_type:v('doc-type'),uploaded_by:me.id,
+    is_company_wide:!empId
+  });
+  if(error){toast('Error: '+error.message,'er');setBtnLoad('upload-doc-btn',false,'Upload');return;}
+  closeMo();toast('Document uploaded!','ok');renderDocuments();
+}
+
+// Onboarding checklist
+const ONBOARDING_ITEMS=['Submit bank account details','Submit PF/UAN details','Complete ID verification','Sign employment contract / NDA','Upload profile photo','Read and acknowledge HR policy','Set up company email','Complete onboarding orientation'];
+
+async function openOnboardingChecklist(empId){
+  const emp=employees.find(e=>e.id===empId);if(!emp)return;
+  const {data:items}=await sb.from('onboarding_checklist').select('*').eq('employee_id',empId).order('created_at');
+  // Seed if empty
+  if(!items||!items.length){
+    await sb.from('onboarding_checklist').insert(ONBOARDING_ITEMS.map(item=>({employee_id:empId,item,completed:false})));
+    const {data:newItems}=await sb.from('onboarding_checklist').select('*').eq('employee_id',empId).order('created_at');
+    renderChecklistModal(emp,newItems||[]);
+  } else {
+    renderChecklistModal(emp,items);
+  }
+}
+
+function renderChecklistModal(emp,items){
+  const done=items.filter(i=>i.completed).length;
+  const pct=items.length?Math.round((done/items.length)*100):0;
+  document.getElementById('md').innerHTML=`
+  <div class="mh"><span class="mt">Onboarding — ${emp.first_name} ${emp.last_name}</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:600">${done} of ${items.length} tasks completed</span><span style="font-weight:700;color:${pct===100?'var(--ok)':'var(--p)'}">${pct}%</span></div>
+      <div class="prog"><div class="pb" style="width:${pct}%;background:${pct===100?'var(--ok)':'var(--p)'}"></div></div>
+    </div>
+    ${items.map(item=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd)">
+      <input type="checkbox" ${item.completed?'checked':''} onchange="toggleChecklist('${item.id}',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--p)">
+      <div style="flex:1">
+        <div style="font-size:13px;${item.completed?'text-decoration:line-through;color:var(--tl)':''}">${item.item}</div>
+        ${item.completed&&item.completed_at?`<div style="font-size:11px;color:var(--tl)">${fd(item.completed_at.split('T')[0])}</div>`:''}
+      </div>
+      ${item.completed?'<i class="fas fa-check-circle" style="color:var(--ok)"></i>':'<i class="fas fa-circle" style="color:var(--bd)"></i>'}
+    </div>`).join('')}
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button></div>`;
+  document.getElementById('mo').classList.add('op');
+}
+
+async function toggleChecklist(id,checked){
+  await sb.from('onboarding_checklist').update({completed:checked,completed_at:checked?new Date().toISOString():null,completed_by:me.id}).eq('id',id);
+}
+
 // ─── REPORTS ───
 async function renderReports(){
   const active=employees.filter(e=>e.status==='active').length;
@@ -1511,6 +1689,14 @@ document.getElementById('confirm-ok').onclick=()=>{closeConfirm();if(confirmCb)c
 
 // ─── SAFE EVENT DELEGATION (avoids inline onclick quote issues) ───
 document.addEventListener('click',async function(e){
+  // Document delete
+  const docDelBtn=e.target.closest('.del-doc-btn');
+  if(docDelBtn){
+    confirm2('Delete document?','This will permanently remove this document.',async()=>{
+      await sb.from('documents').delete().eq('id',docDelBtn.dataset.id);
+      toast('Document deleted','ok');renderDocuments();
+    });return;
+  }
   // Employee delete
   const empDelBtn=e.target.closest('.del-emp-btn');
   if(empDelBtn){
