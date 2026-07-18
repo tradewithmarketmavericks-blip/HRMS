@@ -542,6 +542,7 @@ async function renderPayslip(){
   const net=sal-lopDeduction;
   const lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
   const isLastDay=now.getDate()===lastDay;
+  const monthYear=now.toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('ct').innerHTML=`
   <div class="ph"><div><h2>My Payslip</h2></div>
     <div class="flex gap2">
@@ -560,7 +561,7 @@ async function renderPayslip(){
           </div>
         </div>
         <div style="text-align:right"><div style="color:white;font-size:13px;font-weight:700;letter-spacing:1px">SALARY SLIP</div><div style="color:rgba(255,255,255,.65);font-size:10px;margin-top:2px">${monthYear}</div></div>
-      </div></div>
+      </div>
       <div class="g2" style="margin-bottom:16px">
         ${[['Name',me.first_name+' '+me.last_name],['Employee Code',me.employee_code],['Department',me.department||'-'],['Designation',me.designation||'-'],['Date of Joining',me.date_of_joining?fd(me.date_of_joining):'-'],['Bank Account',me.bank_name?(me.bank_name+(me.bank_account?' — ···· '+me.bank_account.slice(-4):'')):'Not set — Contact HR'],['PF Number',me.pf_number||'Not set — Contact HR'],['UAN Number',me.uan_number||'Not set — Contact HR']].map(([k,vv])=>`<div><div style="font-size:11px;color:var(--tm);font-weight:700;margin-bottom:2px">${k}</div><div style="font-weight:600;font-size:13px">${vv}</div></div>`).join('')}
       </div>
