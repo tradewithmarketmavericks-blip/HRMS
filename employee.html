@@ -152,6 +152,7 @@ tr:last-child td{border-bottom:none}
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing Check-in</div>
       <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements</div>
       <div class="ni" data-pg="directory"><i class="fas fa-address-book"></i>Directory</div>
+      <div class="ni" data-pg="myteam" id="nav-myteam" style="display:none"><i class="fas fa-users-gear"></i>My Team</div>
       <div class="nl">Account</div>
       <div class="ni" data-pg="profile"><i class="fas fa-user-circle"></i>My Profile</div>
     </nav>
@@ -189,6 +190,11 @@ async function init(){
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
   document.getElementById('sb-role').textContent=me.designation||me.department||'Employee';
   await Promise.all([loadMyData(),loadHolidays(),loadAllEmp(),loadCompanyOffs()]);
+  // Show My Team tab only for managers
+  if(me.is_manager){
+    const teamNav=document.getElementById('nav-myteam');
+    if(teamNav)teamNav.style.display='flex';
+  }
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>nav(el.dataset.pg));
   nav('dashboard');
 }
@@ -214,15 +220,15 @@ async function loadMyData(){
 }
 async function loadHolidays(){const {data}=await sb.from('holidays').select('*').order('date');holidays=data||[];}
 async function loadCompanyOffs(){const {data}=await sb.from('company_offs').select('*').order('date');companyOffs=data||[];}
-async function loadAllEmp(){const {data}=await sb.from('employees').select('first_name,last_name,email,phone,department,designation,avatar_color,status').neq('status','inactive').neq('status','terminated');allEmployees=data||[];}
+async function loadAllEmp(){const {data}=await sb.from('employees').select('id,first_name,last_name,email,phone,department,designation,avatar_color,status,manager_id,is_manager').neq('status','inactive').neq('status','terminated');allEmployees=data||[];}
 
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
-  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',profile:'My Profile'};
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',myteam:'My Team',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   clearInterval(clockTimer);
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,profile:renderProfile})[pg]?.();
+  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,myteam:renderMyTeam,profile:renderProfile})[pg]?.();
 }
 
 // ─── DASHBOARD ───
@@ -706,28 +712,130 @@ async function renderHolidays(){
 // ─── DIRECTORY ───
 async function renderDirectory(){
   document.getElementById('ct').innerHTML=`
-  <div class="ph"><div><h2>Employee Directory</h2><p>${allEmployees.length} team members</p></div>
-    <input class="i" style="width:200px" placeholder="Search…" id="dir-search" oninput="filterDir(this.value)">
+  <div class="ph"><div><h2>Employee Directory</h2><p>${allEmployees.length} employees across all departments</p></div></div>
+  <div class="flex gap2" style="margin-bottom:16px">
+    <input class="i" id="dir-search" placeholder="Search by name, department, designation…" oninput="filterDir()" style="flex:1">
+    <select class="i" style="width:160px" id="dir-dept" onchange="filterDir()">
+      <option value="">All Departments</option>
+      ${[...new Set(allEmployees.map(e=>e.department).filter(Boolean))].sort().map(d=>`<option>${d}</option>`).join('')}
+    </select>
   </div>
   <div class="g3" id="dir-grid">
     ${allEmployees.map(e=>`
-    <div class="card dir-card" data-name="${(e.first_name+' '+e.last_name).toLowerCase()}" data-dept="${(e.department||'').toLowerCase()}">
-      <div class="ct2" style="text-align:center;padding:20px">
-        <div class="av" style="background:${e.avatar_color||'#4F46E5'};width:48px;height:48px;font-size:16px;margin:0 auto 10px">${ini(e.first_name,e.last_name)}</div>
-        <div style="font-size:13px;font-weight:700;margin-bottom:2px">${e.first_name} ${e.last_name}</div>
-        <div style="font-size:12px;color:var(--tm);margin-bottom:7px">${e.designation||'-'}</div>
-        <span class="bx gy">${e.department||'-'}</span>
-        <div style="margin-top:9px;font-size:12px;color:var(--tl)">${e.email}</div>
-        ${e.phone?`<div style="font-size:12px;color:var(--tl)">${e.phone}</div>`:''}
+    <div class="card dir-card" data-name="${(e.first_name+' '+e.last_name+' '+(e.designation||'')).toLowerCase()}" data-dept="${(e.department||'').toLowerCase()}">
+      <div class="ct2" style="text-align:center;padding:20px 16px">
+        <div class="av" style="background:${e.avatar_color||'#4F46E5'};width:52px;height:52px;font-size:18px;margin:0 auto 12px">${ini(e.first_name,e.last_name)}</div>
+        <div style="font-weight:700;font-size:14px">${e.first_name} ${e.last_name}</div>
+        <div style="font-size:12px;color:var(--tm);margin:3px 0">${e.designation||'—'}</div>
+        <span class="bx gy" style="margin-bottom:10px">${e.department||'—'}</span>
+        ${e.phone?`<div style="margin-top:10px;font-size:12px"><a href="tel:${e.phone}" style="color:var(--p);text-decoration:none"><i class="fas fa-phone"></i> ${e.phone}</a></div>`:''}
+        ${e.email?`<div style="font-size:12px;margin-top:4px"><a href="mailto:${e.email}" style="color:var(--p);text-decoration:none;font-size:11px"><i class="fas fa-envelope"></i> ${e.email}</a></div>`:''}
       </div>
     </div>`).join('')}
   </div>`;
 }
 
-function filterDir(q){
+function filterDir(){
+  const q=(document.getElementById('dir-search')?.value||'').toLowerCase();
+  const dept=(document.getElementById('dir-dept')?.value||'').toLowerCase();
   document.querySelectorAll('.dir-card').forEach(c=>{
-    c.style.display=(c.dataset.name.includes(q.toLowerCase())||c.dataset.dept.includes(q.toLowerCase()))?'':'none';
+    const match=c.dataset.name.includes(q)||c.dataset.dept.includes(q);
+    const deptMatch=!dept||c.dataset.dept===dept;
+    c.style.display=match&&deptMatch?'':'none';
   });
+}
+
+// ─── MY TEAM (Manager only) ───
+async function renderMyTeam(){
+  if(!me.is_manager){document.getElementById('ct').innerHTML='<div class="empty">You do not have manager access.</div>';return;}
+  const team=allEmployees.filter(e=>e.manager_id===me.id);
+  if(!team.length){document.getElementById('ct').innerHTML=`<div class="ph"><div><h2>My Team</h2></div></div><div class="empty"><i class="fas fa-users-slash"></i><div>No team members assigned yet. Contact admin.</div></div>`;return;}
+  const teamIds=team.map(e=>e.id);
+  const today=new Date().toISOString().split('T')[0];
+  const [attData,leaveData]=await Promise.all([
+    sb.from('attendance').select('employee_id,check_in,check_out,hours_worked,attendance_status').in('employee_id',teamIds).eq('date',today),
+    sb.from('leave_requests').select('*').in('employee_id',teamIds).eq('status','pending'),
+  ]);
+  const attMap={};(attData.data||[]).forEach(a=>attMap[a.employee_id]=a);
+  const pendingLeaves=leaveData.data||[];
+  document.getElementById('ct').innerHTML=`
+  <div class="ph"><div><h2>My Team</h2><p>${team.length} direct report${team.length!==1?'s':''}</p></div></div>
+  ${pendingLeaves.length?`<div class="card" style="margin-bottom:16px;border-left:4px solid var(--wa)"><div class="ch"><span class="ctitle"><i class="fas fa-hourglass-half"></i> Pending Leave Requests</span></div><div class="ct2">
+    ${pendingLeaves.map(l=>{
+      const emp=team.find(e=>e.id===l.employee_id);
+      return `<div class="ri"><div class="flex gap2">
+        <div class="av32" style="background:${emp?.avatar_color||'#4F46E5'}">${ini(emp?.first_name,emp?.last_name)}</div>
+        <div><div style="font-weight:600">${emp?.first_name} ${emp?.last_name}</div>
+        <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fd(l.from_date)}${l.reason?' · '+l.reason:''}</div></div>
+      </div>
+      <div class="flex gap2">
+        <button class="btn bg2 bsm" onclick="mgrActLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days},false)" title="Approve (deduct balance)"><i class="fas fa-check"></i> Approve</button>
+        <button class="btn bp bsm" onclick="mgrActLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days},true)" title="Approve as paid (no deduction)"><i class="fas fa-coins"></i> Paid</button>
+        <button class="btn bd2 bsm bic" onclick="mgrActLeave('${l.id}','rejected','${l.employee_id}','${l.leave_type}',${l.days},false)"><i class="fas fa-times"></i></button>
+      </div></div>`;
+    }).join('')}
+  </div></div>`:''}
+  <div class="g2">
+    ${team.map(e=>{
+      const att=attMap[e.id];
+      const status=att?.check_in&&!att?.check_out?'Clocked In':att?.check_in&&att?.check_out?'Clocked Out':'Absent Today';
+      const sc=att?.check_in&&!att?.check_out?'ok':att?.check_in?'bl':'er';
+      return `<div class="card" style="cursor:pointer" onclick="viewTeamMember('${e.id}')">
+        <div class="ct2">
+          <div class="flex gap2" style="margin-bottom:12px">
+            <div class="av32" style="background:${e.avatar_color||'#4F46E5'};width:44px;height:44px;font-size:16px">${ini(e.first_name,e.last_name)}</div>
+            <div><div style="font-weight:700">${e.first_name} ${e.last_name}</div>
+            <div style="font-size:12px;color:var(--tm)">${e.designation||e.department||'—'}</div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="bx ${sc}">${status}</span>
+            ${att?.hours_worked?`<span style="font-size:12px;color:var(--tm)">${att.hours_worked}h today</span>`:''}
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:var(--tm)"><i class="fas fa-phone" style="width:14px"></i> ${e.phone||'—'}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function mgrActLeave(id,status,empId,leaveType,days,isPaid){
+  const {error}=await sb.from('leave_requests').update({status,approved_by:me.id,approved_at:new Date().toISOString()}).eq('id',id);
+  if(error){toast('Error: '+error.message,'er');return;}
+  if(status==='approved'&&!isPaid){
+    const {data:bal}=await sb.from('leave_balances').select('*').eq('employee_id',empId).eq('leave_type',leaveType).eq('year',new Date().getFullYear()).maybeSingle();
+    if(bal){await sb.from('leave_balances').update({used_days:(bal.used_days||0)+parseInt(days)}).eq('id',bal.id);}
+  }
+  toast(isPaid?'Approved as paid leave — no salary deduction.':'Leave '+status+'!','ok');
+  renderMyTeam();
+}
+
+async function viewTeamMember(empId){
+  const emp=allEmployees.find(e=>e.id===empId);if(!emp)return;
+  const now=new Date();
+  const [attRes,leaveRes,balRes]=await Promise.all([
+    sb.from('attendance').select('*').eq('employee_id',empId).order('date',{ascending:false}).limit(10),
+    sb.from('leave_requests').select('*').eq('employee_id',empId).order('created_at',{ascending:false}).limit(5),
+    sb.from('leave_balances').select('*').eq('employee_id',empId).eq('year',now.getFullYear()),
+  ]);
+  const att=attRes.data||[];const leaves=leaveRes.data||[];const bals=balRes.data||[];
+  document.getElementById('mo').innerHTML=`<div class="md" id="md">
+  <div class="mh"><span class="mt">${emp.first_name} ${emp.last_name}</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
+  <div class="mb2">
+    <div class="flex gap2" style="margin-bottom:16px">
+      <div class="av" style="background:${emp.avatar_color||'#4F46E5'};width:48px;height:48px;font-size:17px">${ini(emp.first_name,emp.last_name)}</div>
+      <div><div style="font-weight:700;font-size:15px">${emp.first_name} ${emp.last_name}</div>
+      <div style="font-size:13px;color:var(--tm)">${emp.designation||''} · ${emp.department||''}</div>
+      <div style="font-size:12px;color:var(--tm);margin-top:4px"><i class="fas fa-phone"></i> ${emp.phone||'—'} &nbsp;<i class="fas fa-envelope"></i> ${emp.email}</div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--tm);text-transform:uppercase;margin-bottom:6px">Leave Balances</div>
+    ${bals.filter(b=>b.leave_type!=='LOP').map(b=>`<div class="lb"><div class="lbh"><strong>${b.leave_type}</strong><span>${(b.total_days||0)-(b.used_days||0)}/${b.total_days||0}</span></div><div class="prog"><div class="pb" style="width:${b.total_days>0?Math.round(((b.used_days||0)/b.total_days)*100):0}%;background:var(--p)"></div></div></div>`).join('')}
+    <div style="font-size:12px;font-weight:700;color:var(--tm);text-transform:uppercase;margin:12px 0 6px">Recent Attendance</div>
+    <div class="tw"><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
+    <tbody>${att.length?att.map(a=>`<tr><td>${fd(a.date)}</td><td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${a.hours_worked||'-'}h</td><td><span class="bx ${a.attendance_status==='half'?'wa':'ok'}">${a.attendance_status||'full'}</span></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No records</td></tr>'}</tbody></table></div>
+  </div>
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button></div>
+  </div>`;
+  document.getElementById('mo').classList.add('op');
 }
 
 // ─── PROFILE ───

@@ -270,7 +270,8 @@ async function renderDashboard(){
           <div><div style="font-weight:600;font-size:13px">${l.employees?.first_name} ${l.employees?.last_name}</div>
           <div style="font-size:12px;color:var(--tm)">${l.leave_type} · ${l.days} day(s) · ${fd(l.from_date)}</div></div></div>
           <div class="flex gap2">
-            <button class="btn bg2 bsm bic apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Approve"><i class="fas fa-check"></i></button>
+            <button class="btn bg2 bsm bic apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" data-paid="false" title="Approve"><i class="fas fa-check"></i></button>
+            <button class="btn bp bsm apv-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" data-paid="true" title="Approve as Paid" style="font-size:11px;padding:4px 7px"><i class="fas fa-coins"></i></button>
             <button class="btn bd2 bsm bic rej-leave-btn" data-id="${l.id}" data-empid="${l.employee_id}" data-type="${l.leave_type}" data-days="${l.days}" title="Reject"><i class="fas fa-times"></i></button>
           </div></div>`).join(''):'<div class="empty"><i class="fas fa-inbox"></i>No pending leave requests</div>'}
       </div></div>
@@ -358,6 +359,7 @@ function filterEmp(){
 function searchEmp(q){navigate('employees');setTimeout(()=>{const el=document.getElementById('emp-search');if(el){el.value=q;filterEmp();}},300);}
 
 function openAddEmployee(){
+  const managers=employees.filter(e=>e.is_manager&&['active','probation'].includes(e.status||'active'));
   document.getElementById('md').innerHTML=`
   <div class="mh"><span class="mt">Add New Employee</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
@@ -365,9 +367,10 @@ function openAddEmployee(){
     <div class="fr"><div><label class="lbl">Email *</label><input class="i" id="e-em" type="email" placeholder="employee@company.com"></div><div><label class="lbl">Phone</label><input class="i" id="e-ph" placeholder="9876543210"></div></div>
     <div class="fr"><div><label class="lbl">Department</label><select class="i" id="e-dp"><option value="">Select…</option>${departments.map(d=>`<option>${d.name}</option>`).join('')}</select></div><div><label class="lbl">Designation</label><input class="i" id="e-de" placeholder="e.g. Sales Manager"></div></div>
     <div class="fr"><div><label class="lbl">Date of Joining</label><input class="i" type="date" id="e-dj" value="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">Employee Code</label><input class="i" id="e-ec" value="EMP${String(employees.length+1).padStart(3,'0')}"></div></div>
-    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Tax Deduction (₹/month)</label><input class="i" type="number" id="e-tx" placeholder="0"></div></div>
-    <div class="fr"><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div></div>
-    <div class="fr f1"><div><label class="lbl">Weekly Off Day</label><select class="i" id="e-wo"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
+    <div class="fr"><div><label class="lbl">Gross Salary (₹)</label><input class="i" type="number" id="e-sl" placeholder="50000"></div><div><label class="lbl">Status</label><select class="i" id="e-st"><option value="active">Active</option><option value="probation">Probation</option></select></div></div>
+    <div class="fr"><div><label class="lbl">Role</label><select class="i" id="e-rl"><option value="employee">Employee</option><option value="admin">Admin</option></select></div><div><label class="lbl">Weekly Off Day</label><select class="i" id="e-wo"><option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select></div></div>
+    <div class="fr"><div><label class="lbl">Reports To (Manager)</label><select class="i" id="e-mgr"><option value="">No Manager</option>${managers.map(m=>`<option value="${m.id}">${m.first_name} ${m.last_name}</option>`).join('')}</select></div>
+    <div><label class="lbl">Is this employee a Manager?</label><select class="i" id="e-ismgr"><option value="false">No</option><option value="true">Yes</option></select></div></div>
     <div style="background:var(--okl);color:#065F46;border-radius:8px;padding:11px;font-size:12px;margin-top:6px"><i class="fas fa-check-circle"></i> Employee record will be created and a password setup email sent to their inbox automatically.</div>
   </div>
   <div class="mf"><button class="btn bo" onclick="closeMo()">Cancel</button><button class="btn bp" id="save-emp-btn" onclick="saveNewEmployee()"><i class="fas fa-save"></i> Add Employee</button></div>`;
@@ -391,15 +394,15 @@ async function saveNewEmployee(){
   // If signUp fails due to authenticated session restriction, create employee without user_id
   // and show instructions to link manually
   if(authErr||!userId){
-    // Fallback: insert employee record without auth link
     const {data:emp,error:empErr}=await sb.from('employees').insert({
       employee_code:ec,first_name:fn,last_name:ln,email:em,
       phone:v('e-ph')||null,department:v('e-dp')||null,
       designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
       gross_salary:parseFloat(v('e-sl'))||0,
-      tax_amount:parseFloat(v('e-tx'))||0,
       role:v('e-rl'),status:v('e-st'),avatar_color:color,
-      weekly_off_day:parseInt(v('e-wo'))||0
+      weekly_off_day:parseInt(v('e-wo'))||0,
+      manager_id:v('e-mgr')||null,
+      is_manager:v('e-ismgr')==='true'
     }).select().single();
     if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
     await sb.from('leave_balances').insert([
@@ -410,7 +413,6 @@ async function saveNewEmployee(){
     ]);
     await loadEmployees();
     closeMo();
-    // Show instructions modal
     document.getElementById('md').innerHTML=`
     <div class="mh"><span class="mt">Employee Added — Action Required</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
     <div class="mb2">
@@ -439,9 +441,10 @@ async function saveNewEmployee(){
     phone:v('e-ph')||null,department:v('e-dp')||null,
     designation:v('e-de')||null,date_of_joining:v('e-dj')||null,
     gross_salary:parseFloat(v('e-sl'))||0,
-    tax_amount:parseFloat(v('e-tx'))||0,
     role:v('e-rl'),status:v('e-st'),avatar_color:color,
-    weekly_off_day:parseInt(v('e-wo'))||0
+    weekly_off_day:parseInt(v('e-wo'))||0,
+    manager_id:v('e-mgr')||null,
+    is_manager:v('e-ismgr')==='true'
   }).select().single();
 
   if(empErr){toast('Error: '+(empErr.code==='23505'?'Employee code or email already exists.':empErr.message),'er');setBtnLoad('save-emp-btn',false,'Add Employee');return;}
@@ -453,11 +456,8 @@ async function saveNewEmployee(){
     {employee_id:emp.id,leave_type:'Work From Home',total_days:8,year:yr},
   ]);
 
-  // Send password reset so employee sets their own password
   const redirectUrl=window.location.href.replace('admin.html','index.html');
-  await sbReg.auth.resetPasswordForEmail(em,{
-    redirectTo:redirectUrl
-  });
+  await sbReg.auth.resetPasswordForEmail(em,{redirectTo:redirectUrl});
 
   await loadEmployees();
   closeMo();
@@ -487,6 +487,14 @@ async function openEditEmployee(id){
     <div><label class="lbl">Weekly Off Day</label><select class="i" id="ee-wo">
       ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((d,i)=>`<option value="${i}" ${(e.weekly_off_day??0)===i?'selected':''}>${d}</option>`).join('')}
     </select></div></div>
+    <div class="fr"><div><label class="lbl">Reports To (Manager)</label><select class="i" id="ee-mgr">
+      <option value="">No Manager</option>
+      ${employees.filter(m=>m.is_manager&&m.id!==id).map(m=>`<option value="${m.id}" ${e.manager_id===m.id?'selected':''}>${m.first_name} ${m.last_name}</option>`).join('')}
+    </select></div>
+    <div><label class="lbl">Is this employee a Manager?</label><select class="i" id="ee-ismgr">
+      <option value="false" ${!e.is_manager?'selected':''}>No</option>
+      <option value="true" ${e.is_manager?'selected':''}>Yes</option>
+    </select></div></div>
     <div style="margin-top:4px;padding:12px;background:#F8FAFC;border-radius:8px;border:1px solid var(--bd)">
       <div style="font-size:12px;font-weight:700;color:var(--tm);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px"><i class="fas fa-building-columns"></i> Bank & PF Details</div>
       <div class="fr"><div><label class="lbl">Bank Name</label><input class="i" id="ee-bn" value="${e.bank_name||''}" placeholder="e.g. HDFC Bank"></div><div><label class="lbl">Account Number</label><input class="i" id="ee-ba" value="${e.bank_account||''}" placeholder="Account number"></div></div>
@@ -507,9 +515,11 @@ async function saveEditEmployee(id){
   const updates={
     first_name:v('ee-fn'),last_name:v('ee-ln'),email:v('ee-em'),phone:v('ee-ph'),
     department:v('ee-dp'),designation:v('ee-de'),
-    gross_salary:parseFloat(v('ee-sl'))||0,tax_amount:parseFloat(v('ee-tx'))||0,
+    gross_salary:parseFloat(v('ee-sl'))||0,
     status:v('ee-st'),role:v('ee-rl'),date_of_joining:v('ee-dj')||null,
     weekly_off_day:parseInt(v('ee-wo'))||0,
+    manager_id:v('ee-mgr')||null,
+    is_manager:v('ee-ismgr')==='true',
     bank_name:v('ee-bn')||null,bank_account:v('ee-ba')||null,
     bank_ifsc:v('ee-bi')||null,pf_number:v('ee-pf')||null,uan_number:v('ee-uan')||null
   };
@@ -647,8 +657,9 @@ async function renderLeaves(){
     <td style="max-width:140px;font-size:12px;color:var(--tm)">${l.reason||'-'}</td>
     <td><span class="bx ${l.status==='approved'?'ok':l.status==='pending'?'wa':'er'}" id="ls-${l.id}">${l.status}</span></td>
     <td id="la-${l.id}">${l.status==='pending'?`<div class="flex gap2">
-      <button class="btn bg2 bsm bic" onclick="actLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days})" title="Approve"><i class="fas fa-check"></i></button>
-      <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected','${l.employee_id}','${l.leave_type}',${l.days})" title="Reject"><i class="fas fa-times"></i></button>
+      <button class="btn bg2 bsm bic" onclick="actLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days},false)" title="Approve (deduct balance)"><i class="fas fa-check"></i></button>
+      <button class="btn bp bsm" onclick="actLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days},true)" title="Approve as Paid (no deduction)" style="font-size:11px;padding:4px 8px"><i class="fas fa-coins"></i> Paid</button>
+      <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected','${l.employee_id}','${l.leave_type}',${l.days},false)" title="Reject"><i class="fas fa-times"></i></button>
     </div>`:'-'}</td>
   </tr>`).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>
   ${regs&&regs.length?`<div class="card"><div class="ch"><span class="ctitle">Regularisation Requests</span><span class="bx wa">${pendingRegs} pending</span></div>
@@ -681,20 +692,19 @@ function filterLeaves(){
   });
 }
 
-async function actLeave(id,status,empId,leaveType,days){
+async function actLeave(id,status,empId,leaveType,days,isPaid=false){
   const {error}=await sb.from('leave_requests').update({status,approved_by:me.id,approved_at:new Date().toISOString()}).eq('id',id);
   if(error){toast('Error: '+error.message,'er');return;}
-  // Auto-deduct leave balance if approved
-  if(status==='approved'&&empId&&leaveType&&days){
+  if(status==='approved'&&empId&&leaveType&&days&&!isPaid){
     const daysNum=parseInt(days)||0;
     const {data:bal}=await sb.from('leave_balances').select('*').eq('employee_id',empId).eq('leave_type',leaveType).eq('year',new Date().getFullYear()).maybeSingle();
     if(bal&&daysNum>0){await sb.from('leave_balances').update({used_days:(bal.used_days||0)+daysNum}).eq('id',bal.id);}
   }
   const badge=document.getElementById('ls-'+id);
   const actions=document.getElementById('la-'+id);
-  if(badge){badge.className=`bx ${status==='approved'?'ok':'er'}`;badge.textContent=status;}
+  if(badge){badge.className=`bx ${status==='approved'?'ok':'er'}`;badge.textContent=isPaid?'approved (paid)':status;}
   if(actions)actions.innerHTML='-';
-  toast(`Leave ${status}!`,status==='approved'?'ok':'');
+  toast(isPaid?`Leave approved as Paid — no deduction.`:`Leave ${status}!`,status==='approved'?'ok':'');
   await updateBadge();
 }
 
@@ -1427,7 +1437,8 @@ document.addEventListener('click',async function(e){
   // Dashboard leave approve
   const apvBtn=e.target.closest('.apv-leave-btn');
   if(apvBtn){
-    await actLeave(apvBtn.dataset.id,'approved',apvBtn.dataset.empid,apvBtn.dataset.type,apvBtn.dataset.days);
+    const isPaid=apvBtn.dataset.paid==='true';
+    await actLeave(apvBtn.dataset.id,'approved',apvBtn.dataset.empid,apvBtn.dataset.type,apvBtn.dataset.days,isPaid);
     renderDashboard();return;
   }
   // Dashboard leave reject
