@@ -1228,7 +1228,7 @@ async function renderDepartments(){
         ${d.head_name?`<div style="font-size:12px;color:var(--tm);margin-bottom:9px">Head: ${d.head_name}</div>`:'<div style="margin-bottom:9px"></div>'}
         <div style="display:flex;align-items:center;justify-content:space-between">
           <span class="bx gy">${count} member${count!==1?'s':''}</span>
-          <div class="flex gap2" onclick="event.stopPropagation()">
+          <div class="flex gap2">
             <button class="btn bo bsm edit-dept-btn" data-id="${d.id}" data-name="${d.name.replace(/"/g,'&quot;')}" data-head="${(d.head_name||'').replace(/"/g,'&quot;')}">Edit</button>
             <button class="btn bd2 bsm bic del-dept-btn" data-id="${d.id}" data-name="${d.name.replace(/"/g,'&quot;')}"><i class="fas fa-trash"></i></button>
           </div>
@@ -1812,11 +1812,13 @@ document.addEventListener('click',async function(e){
   // Department edit
   const deptEditBtn=e.target.closest('.edit-dept-btn');
   if(deptEditBtn){
+    e.stopPropagation();
     editDept(deptEditBtn.dataset.id,deptEditBtn.dataset.name,deptEditBtn.dataset.head);return;
   }
   // Department delete
   const deptDelBtn=e.target.closest('.del-dept-btn');
   if(deptDelBtn){
+    e.stopPropagation();
     const id=deptDelBtn.dataset.id,name=deptDelBtn.dataset.name;
     confirm2(`Delete ${name}?`,'Employees in this department will not be deleted.',async()=>{
       await sb.from('departments').delete().eq('id',id);
