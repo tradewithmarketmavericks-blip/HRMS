@@ -627,8 +627,13 @@ async function saveAttendance(){
 
 // ─── LEAVES ───
 async function renderLeaves(){
-  const {data:leaves}=await sb.from('leave_requests').select('*,employees(first_name,last_name,avatar_color,employee_code)').order('created_at',{ascending:false});
-  const {data:regs}=await sb.from('regularisation_requests').select('*,employees(first_name,last_name,avatar_color,employee_code)').order('created_at',{ascending:false});
+  // Fetch separately to avoid RLS blocking nested join
+  const [{data:leaves},{data:regs}]=await Promise.all([
+    sb.from('leave_requests').select('*').order('created_at',{ascending:false}),
+    sb.from('regularisation_requests').select('*').order('created_at',{ascending:false}),
+  ]);
+  // Build employee lookup map from already-loaded employees array
+  const empMap={};employees.forEach(e=>empMap[e.id]=e);
   const pending=leaves?leaves.filter(l=>l.status==='pending').length:0;
   const approved=leaves?leaves.filter(l=>l.status==='approved').length:0;
   const rejected=leaves?leaves.filter(l=>l.status==='rejected').length:0;
@@ -649,9 +654,11 @@ async function renderLeaves(){
     </div>
   </div>
   <div class="tw"><table id="leave-table"><thead><tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
-  <tbody>${leaves&&leaves.length?leaves.map(l=>`<tr id="lr-${l.id}" data-status="${l.status}" data-type="${l.leave_type}" data-emp="${(l.employees?.first_name+' '+l.employees?.last_name).toLowerCase()}">
-    <td><div class="flex gap2"><div class="av32" style="background:${l.employees?.avatar_color||'#4F46E5'}">${ini(l.employees?.first_name,l.employees?.last_name)}</div>
-    <div><div style="font-weight:600">${l.employees?.first_name} ${l.employees?.last_name}</div><div style="font-size:11px;color:var(--tm)">${l.employees?.employee_code}</div></div></div></td>
+  <tbody>${leaves&&leaves.length?leaves.map(l=>{
+    const emp=empMap[l.employee_id]||{};
+    return `<tr id="lr-${l.id}" data-status="${l.status}" data-type="${l.leave_type}" data-emp="${((emp.first_name||'')+' '+(emp.last_name||'')).toLowerCase()}">
+    <td><div class="flex gap2"><div class="av32" style="background:${emp.avatar_color||'#4F46E5'}">${ini(emp.first_name,emp.last_name)}</div>
+    <div><div style="font-weight:600">${emp.first_name||'Unknown'} ${emp.last_name||''}</div><div style="font-size:11px;color:var(--tm)">${emp.employee_code||''}</div></div></div></td>
     <td><span class="bx ${l.leave_type==='LOP'?'er':'bl'}">${l.leave_type}</span></td>
     <td>${fd(l.from_date)}</td><td>${fd(l.to_date)}</td><td>${l.days}</td>
     <td style="max-width:140px;font-size:12px;color:var(--tm)">${l.reason||'-'}</td>
@@ -661,12 +668,14 @@ async function renderLeaves(){
       <button class="btn bp bsm" onclick="actLeave('${l.id}','approved','${l.employee_id}','${l.leave_type}',${l.days},true)" title="Approve as Paid (no deduction)" style="font-size:11px;padding:4px 8px"><i class="fas fa-coins"></i> Paid</button>
       <button class="btn bd2 bsm bic" onclick="actLeave('${l.id}','rejected','${l.employee_id}','${l.leave_type}',${l.days},false)" title="Reject"><i class="fas fa-times"></i></button>
     </div>`:'-'}</td>
-  </tr>`).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>
+  </tr>`;}).join(''):'<tr><td colspan="8" class="empty">No leave requests yet</td></tr>'}</tbody></table></div></div>
   ${regs&&regs.length?`<div class="card"><div class="ch"><span class="ctitle">Regularisation Requests</span><span class="bx wa">${pendingRegs} pending</span></div>
   <div class="tw"><table><thead><tr><th>Employee</th><th>Date</th><th>Req. Check-In</th><th>Req. Check-Out</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
-  <tbody>${regs.map(r=>`<tr>
-    <td><div class="flex gap2"><div class="av32" style="background:${r.employees?.avatar_color||'#4F46E5'}">${ini(r.employees?.first_name,r.employees?.last_name)}</div>
-    <div style="font-weight:600">${r.employees?.first_name} ${r.employees?.last_name}<div style="font-size:11px;color:var(--tm)">${r.employees?.employee_code}</div></div></div></td>
+  <tbody>${regs.map(r=>{
+    const emp=empMap[r.employee_id]||{};
+    return `<tr>
+    <td><div class="flex gap2"><div class="av32" style="background:${emp.avatar_color||'#4F46E5'}">${ini(emp.first_name,emp.last_name)}</div>
+    <div style="font-weight:600">${emp.first_name||'Unknown'} ${emp.last_name||''}<div style="font-size:11px;color:var(--tm)">${emp.employee_code||''}</div></div></div></td>
     <td>${fd(r.date)}</td>
     <td>${r.requested_check_in}</td>
     <td>${r.requested_check_out}</td>
@@ -676,7 +685,7 @@ async function renderLeaves(){
       <button class="btn bg2 bsm bic" onclick="actRegularisation('${r.id}','${r.employee_id}','${r.date}','${r.requested_check_in}','${r.requested_check_out}','approved')" title="Approve"><i class="fas fa-check"></i></button>
       <button class="btn bd2 bsm bic" onclick="actRegularisation('${r.id}','${r.employee_id}','${r.date}','${r.requested_check_in}','${r.requested_check_out}','rejected')" title="Reject"><i class="fas fa-times"></i></button>
     </div>`:'-'}</td>
-  </tr>`).join('')}</tbody></table></div></div>`:''}`;
+  </tr>`;}).join('')}</tbody></table></div></div>`:''}`;
   await updateBadge();
 }
 
