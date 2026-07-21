@@ -469,13 +469,6 @@ async function saveNewEmployee(){
   renderEmployees();
 }
 
-function _oldSaveNewEmployee_unused(){
-  const fn='',ln='',em='',ec='';
-  if(!fn||!ln||!em||!ec){return;}
-  if(false){
-}
-
-
 async function openEditEmployee(id){
   const e=employees.find(x=>x.id===id);if(!e)return;
   document.getElementById('md').innerHTML=`
