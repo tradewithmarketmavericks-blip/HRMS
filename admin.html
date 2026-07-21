@@ -1822,20 +1822,30 @@ document.addEventListener('click',async function(e){
   if(empDelBtn){
     const id=empDelBtn.dataset.id,name=empDelBtn.dataset.name;
     confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their records. This cannot be undone.`,async()=>{
-      const {data:{session}}=await sb.auth.getSession();
-      const res=await fetch(`${SUPABASE_URL}/functions/v1/delete-employee`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_ANON_KEY},
-        body:JSON.stringify({emp_id:id})
-      });
-      const result=await res.json();
-      if(!res.ok||result.error){
-        toast('Delete failed: '+(result.error||'Unknown error'),'er');
-        return;
+      try{
+        const {data:{session}}=await sb.auth.getSession();
+        if(!session){toast('Session expired. Please log in again.','er');return;}
+        toast('Deleting…','');
+        const res=await fetch(`${SUPABASE_URL}/functions/v1/delete-employee`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_ANON_KEY},
+          body:JSON.stringify({emp_id:id})
+        });
+        const txt=await res.text();
+        console.log('Delete response:',res.status,txt);
+        let result={};
+        try{result=JSON.parse(txt);}catch(e){result={error:txt};}
+        if(!res.ok||result.error){
+          toast('Delete failed ('+res.status+'): '+(result.error||txt),'er');
+          return;
+        }
+        await loadEmployees();
+        toast(`${name} deleted successfully.`,'ok');
+        renderEmployees();
+      }catch(err){
+        toast('Network error: '+err.message,'er');
+        console.error('Delete error:',err);
       }
-      await loadEmployees();
-      toast(`${name} deleted successfully.`,'ok');
-      renderEmployees();
     },'Delete','bd2');return;
   }
   // Dashboard leave approve
