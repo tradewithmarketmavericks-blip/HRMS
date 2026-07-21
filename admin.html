@@ -1800,7 +1800,7 @@ function confirm2(title,msg,cb,okTxt='Confirm',okCls='bd2'){
   document.getElementById('confirm-overlay').classList.add('op');
 }
 function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('op');confirmCb=null;}
-document.getElementById('confirm-ok').onclick=()=>{closeConfirm();if(confirmCb)confirmCb();};
+document.getElementById('confirm-ok').onclick=()=>{const cb=confirmCb;closeConfirm();if(cb)cb();};
 
 // ─── SAFE EVENT DELEGATION (avoids inline onclick quote issues) ───
 document.addEventListener('click',async function(e){
