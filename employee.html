@@ -346,7 +346,7 @@ async function clockAction(btnId,dotId,txtId){
     const now=new Date();
     const hours=clockInTime?Math.round((now-clockInTime)/3600000*10)/10:0;
     // Determine attendance status based on hours
-    const attStatus=hours>=9?'full':hours>=4.5?'half':'half';
+    const attStatus=hours>=9?'full':hours>=4.5?'short':'half';
     const {error}=await sb.from('attendance').update({
       check_out:now.toISOString(),
       hours_worked:hours,
@@ -605,7 +605,7 @@ async function renderPayslip(){
     ${payrollList.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)">
       <div style="font-weight:600">${new Date(p.year,p.month-1).toLocaleString('default',{month:'long'})} ${p.year}</div>
       <div class="flex gap2"><span class="bx ${p.status==='paid'?'ok':p.status==='processed'?'bl':'wa'}">${p.status}</span>
-      <span style="font-weight:700;color:var(--ok)">₹${((p.gross_salary||0)-(p.pf_deduction||0)-(p.tax_deduction||0)-200).toLocaleString('en-IN')}</span></div>
+      <span style="font-weight:700;color:var(--ok)">₹${((p.gross_salary||0)-(p.lop_deduction||0)).toLocaleString('en-IN')}</span></div>
     </div>`).join('')}
   </div></div>`:''}`;
 }
