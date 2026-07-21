@@ -1884,11 +1884,11 @@ document.addEventListener('click',async function(e){
   if(empDelBtn){
     const id=empDelBtn.dataset.id,name=empDelBtn.dataset.name;
     confirm2(`Delete ${name}?`,`This will permanently remove ${name} and all their records. This cannot be undone.`,async()=>{
-      const {error}=await sb.rpc('delete_employee_cascade',{emp_id:id});
+      const {data,error}=await sb.rpc('delete_employee_cascade',{emp_id:id});
+      console.log('Delete RPC result:',{data,error});
       if(error){
-        toast('Delete failed: '+error.message,'er');
-        console.error('Delete error:',error);
-        // Still reload to check if it actually deleted
+        toast('Delete failed: '+error.message+' ('+error.code+')','er');
+        // Still reload to check actual DB state
         await loadEmployees();
         renderEmployees();
         return;
