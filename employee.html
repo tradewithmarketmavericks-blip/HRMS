@@ -502,7 +502,7 @@ function openLeaveModal(type='Casual Leave'){
     <div class="fr f1"><div><label class="lbl">Leave Type</label><select class="i" id="lt">
       ${['Casual Leave','Sick Leave','Comp Off','Work From Home','Maternity Leave','Paternity Leave','LOP (Loss of Pay)','Unpaid Leave'].map(t=>`<option ${t===type||t.startsWith(type)?'selected':''}>${t}</option>`).join('')}
     </select></div></div>
-    <div class="fr"><div><label class="lbl">From Date</label><input class="i" type="date" id="lf" min="${new Date().toISOString().split('T')[0]}"></div><div><label class="lbl">To Date</label><input class="i" type="date" id="lt2" min="${new Date().toISOString().split('T')[0]}"></div></div>
+    <div class="fr"><div><label class="lbl">From Date</label><input class="i" type="date" id="lf"></div><div><label class="lbl">To Date</label><input class="i" type="date" id="lt2"></div></div>
     <div class="fr f1"><div><label class="lbl">Reason</label><textarea class="i" id="lr" placeholder="Brief reason for leave…"></textarea></div></div>
     <div style="background:var(--bg);border-radius:7px;padding:10px;font-size:12px;color:var(--tm)"><i class="fas fa-info-circle"></i> Requests are subject to manager approval. LOP will be deducted from your salary.</div>
   </div>
@@ -677,6 +677,12 @@ async function renderAnnouncements(){
     </div>
     <p style="color:var(--tm);font-size:13px;line-height:1.6">${a.content}</p>
   </div></div>`).join(''):'<div class="empty"><i class="fas fa-bullhorn"></i><div>No announcements yet</div></div>'}`;
+  // Mark all as read and hide badge
+  if(ann&&ann.length&&me?.id){
+    const reads=ann.map(a=>({announcement_id:a.id,employee_id:me.id}));
+    await sb.from('announcement_reads').upsert(reads,{onConflict:'announcement_id,employee_id',ignoreDuplicates:true});
+    hideBadge();
+  }
 }
 
 // ─── HOLIDAY CALENDAR ───
@@ -837,7 +843,7 @@ async function viewTeamMember(empId){
     sb.from('leave_balances').select('*').eq('employee_id',empId).eq('year',now.getFullYear()),
   ]);
   const att=attRes.data||[];const leaves=leaveRes.data||[];const bals=balRes.data||[];
-  document.getElementById('mo').innerHTML=`<div class="md" id="md">
+  document.getElementById('md').innerHTML=`
   <div class="mh"><span class="mt">${emp.first_name} ${emp.last_name}</span><button class="xb" onclick="closeMo()"><i class="fas fa-times"></i></button></div>
   <div class="mb2">
     <div class="flex gap2" style="margin-bottom:16px">
@@ -852,8 +858,7 @@ async function viewTeamMember(empId){
     <div class="tw"><table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
     <tbody>${att.length?att.map(a=>`<tr><td>${fd(a.date)}</td><td>${a.check_in?new Date(a.check_in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${a.check_out?new Date(a.check_out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'-'}</td><td>${a.hours_worked||'-'}h</td><td><span class="bx ${a.attendance_status==='half'?'wa':'ok'}">${a.attendance_status||'full'}</span></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No records</td></tr>'}</tbody></table></div>
   </div>
-  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button></div>
-  </div>`;
+  <div class="mf"><button class="btn bo" onclick="closeMo()">Close</button></div>`;
   document.getElementById('mo').classList.add('op');
 }
 
@@ -1093,19 +1098,6 @@ async function updateAnnBadge(){
   if(badge){badge.style.display=unread>0?'inline-flex':'none';badge.textContent=unread;}
 }
 function hideBadge(){const b=document.getElementById('ann-badge');if(b)b.style.display='none';}
-
-// Override renderAnnouncements to mark as read
-const _origRenderAnn=renderAnnouncements;
-async function renderAnnouncements(){
-  await _origRenderAnn?.();
-  // Mark all as read
-  const {data:anns}=await sb.from('announcements').select('id');
-  if(anns&&anns.length){
-    const reads=anns.map(a=>({announcement_id:a.id,employee_id:me.id}));
-    await sb.from('announcement_reads').upsert(reads,{onConflict:'announcement_id,employee_id',ignoreDuplicates:true});
-    hideBadge();
-  }
-}
 
 // ─── MY DOCUMENTS ───
 async function renderMyDocuments(){

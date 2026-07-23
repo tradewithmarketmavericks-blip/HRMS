@@ -1685,7 +1685,7 @@ function dlCSV(rows,filename){
   toast('Downloaded!','ok');
 }
 function empDir(){dlCSV(['Code,Name,Email,Phone,Department,Designation,Joined,Salary,Status',...employees.map(e=>`${e.employee_code},"${e.first_name} ${e.last_name}",${e.email},${e.phone||''},${e.department||''},${e.designation||''},${e.date_of_joining||''},${e.gross_salary||0},${e.status||'active'}`)], 'employee_directory.csv');}
-function payRep(){dlCSV(['Name,Code,Department,Gross Salary,PF (12%),TDS,Prof Tax,Net Pay',...employees.filter(e=>e.status==='active').map(e=>{const pf=Math.round((e.gross_salary||0)*0.12);return `"${e.first_name} ${e.last_name}",${e.employee_code},${e.department||''},${e.gross_salary||0},${pf},${e.tax_amount||0},200,${(e.gross_salary||0)-pf-(e.tax_amount||0)-200}`;})], 'payroll_report.csv');}
+function payRep(){dlCSV(['Name,Code,Department,Gross Salary,LOP Days,LOP Deduction,Net Pay',...employees.filter(e=>e.status==='active').map(e=>{const lopDed=0;return `"${e.first_name} ${e.last_name}",${e.employee_code},${e.department||''},${e.gross_salary||0},0,0,${e.gross_salary||0}`;})], 'payroll_report.csv');}
 function deptRep(){dlCSV(['Department,Head,Active Employees',...departments.map(d=>`${d.name},${d.head_name||''},${employees.filter(e=>e.department===d.name&&e.status==='active').length}`)], 'department_report.csv');}
 async function attRep(){
   const empMap={};employees.forEach(e=>empMap[e.id]=e);
@@ -1720,10 +1720,10 @@ function dlExcel(data,filename){
 
 async function downloadAllEmployeesExcel(){
   toast('Preparing employee data…','');
-  const rows=[['Employee Code','First Name','Last Name','Email','Phone','Department','Designation','Date of Joining','Gross Salary','Tax Deduction','Role','Status','Weekly Off Day','Bank Name','Account Number','Bank IFSC','PF Number','UAN Number']];
+  const rows=[['Employee Code','First Name','Last Name','Email','Phone','Department','Designation','Date of Joining','Gross Salary','Role','Status','Weekly Off Day','Bank Name','Account Number','Bank IFSC','PF Number','UAN Number']];
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   employees.forEach(e=>{
-    rows.push([e.employee_code,e.first_name,e.last_name,e.email,e.phone||'',e.department||'',e.designation||'',e.date_of_joining||'',e.gross_salary||0,e.tax_amount||0,e.role||'employee',e.status||'active',days[e.weekly_off_day??0],e.bank_name||'',e.bank_account||'',e.bank_ifsc||'',e.pf_number||'',e.uan_number||'']);
+    rows.push([e.employee_code,e.first_name,e.last_name,e.email,e.phone||'',e.department||'',e.designation||'',e.date_of_joining||'',e.gross_salary||0,e.role||'employee',e.status||'active',days[e.weekly_off_day??0],e.bank_name||'',e.bank_account||'',e.bank_ifsc||'',e.pf_number||'',e.uan_number||'']);
   });
   const now=new Date();
   dlExcel(rows,`employees_${now.getFullYear()}_${String(now.getMonth()+1).padStart(2,'0')}.csv`);
@@ -1782,7 +1782,7 @@ async function rejectHolidayWork(id){
 function ini(fn,ln){return((fn||'?')[0]+(ln||'')[0]).toUpperCase();}
 function fd(d){if(!d)return'-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
 function v(id){const el=document.getElementById(id);return el?el.value.trim():'';}
-function setAvatar(id,fn,ln,color){const el=document.getElementById(id);if(el){el.textContent=ini(fn,ln);if(color)el.style.background=color;}}
+function setAvatar(id,fn,ln,color){const el=document.getElementById(id);if(el){el.textContent=ini(fn,ln);if(color)el.style.background=color;el.style.color='white';}}
 function stars(n){if(!n)return'<span style="color:var(--tl)">—</span>';return'★'.repeat(n)+'☆'.repeat(5-n);}
 function tpw(id,el){const i=document.getElementById(id);if(i){i.type=i.type==='password'?'text':'password';el.textContent=i.type==='password'?'👁':'🙈';}}
 function closeMo(){document.getElementById('mo').classList.remove('op');}
