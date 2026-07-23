@@ -133,7 +133,88 @@ tr:last-child td{border-bottom:none}
 #toast.er{background:var(--er)}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
-@media(max-width:768px){.sb{width:0;overflow:hidden}.sg{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+@media(max-width:768px){
+  /* Sidebar hidden on mobile - replaced by bottom nav */
+  .sb{display:none}
+  .shell{flex-direction:column}
+  .main{height:100vh;padding-bottom:64px}
+  .topbar{padding:0 14px;height:52px}
+  .tb-title{font-size:14px}
+  .lob{display:none}
+  .ct{padding:12px}
+  /* Stats grid */
+  .sg{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .sc{padding:12px}
+  .sc .sv{font-size:20px}
+  .sc .si{width:30px;height:30px;font-size:12px;right:10px}
+  /* Two col to one col */
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  /* Modal full screen on mobile */
+  .mo{padding:0;align-items:flex-end}
+  .md{border-radius:18px 18px 0 0;max-width:100%;max-height:92vh}
+  .mh{border-radius:18px 18px 0 0;padding:14px 16px}
+  .mb2{padding:14px 16px}
+  .mf{padding:12px 16px}
+  /* Forms */
+  .fr{grid-template-columns:1fr;gap:10px}
+  .fr.f1{grid-template-columns:1fr}
+  /* Tables scroll */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:500px}
+  th,td{padding:8px 10px;font-size:12px}
+  /* Clock card */
+  .clock-card{padding:18px 14px}
+  .clock-time{font-size:34px}
+  /* Quick actions */
+  .qa{gap:6px}
+  .qa-btn{padding:7px 10px;font-size:12px}
+  /* Page header */
+  .ph{margin-bottom:12px}
+  .ph h2{font-size:16px}
+  /* Cards */
+  .card{margin-bottom:12px}
+  .ch{padding:11px 14px;flex-wrap:wrap;gap:7px}
+  .ct2{padding:13px}
+  /* Buttons */
+  .btn{padding:7px 11px;font-size:12px}
+  .bsm{padding:5px 8px;font-size:11px}
+  /* Toast bottom position adjusted */
+  #toast{bottom:74px;right:12px;left:12px;text-align:center}
+  /* Directory grid */
+  .g3{grid-template-columns:1fr}
+  /* Payslip */
+  .payslip-row{font-size:12px}
+  /* Wellbeing ratings */
+  .well-survey .rating label{width:28px;height:28px;font-size:11px}
+  /* Quick action row wrap */
+  .flex.gap2{flex-wrap:wrap}
+  /* hide topbar profile button */
+  .tb-right .lob:first-child{display:none}
+}
+@media(max-width:400px){
+  .sg{grid-template-columns:1fr 1fr}
+  .sc .sv{font-size:18px}
+  .clock-time{font-size:30px}
+}
+/* ─── MOBILE BOTTOM NAV ─── */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--bd);z-index:500;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+@media(max-width:768px){.mob-nav{display:flex}}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;color:var(--tl);transition:color .15s;min-width:0;position:relative}
+.mob-nav-item.on{color:var(--p)}
+.mob-nav-item i{font-size:18px;margin-bottom:3px}
+.mob-nav-item span{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mob-nav-dot{position:absolute;top:6px;right:calc(50% - 14px);width:7px;height:7px;background:var(--er);border-radius:50%;display:none}
+.mob-nav-dot.show{display:block}
+/* Mobile topbar menu button */
+.mob-menu-btn{display:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--bd);background:white;align-items:center;justify-content:center;cursor:pointer;color:var(--tm);flex-shrink:0}
+@media(max-width:768px){.mob-menu-btn{display:flex}}
+/* Mobile drawer */
+.mob-drawer{display:none;position:fixed;inset:0;z-index:900}
+.mob-drawer.op{display:flex}
+.mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.mob-drawer-panel{position:relative;width:250px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
+.mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 </style>
 </head>
 <body>
@@ -161,6 +242,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <div class="main">
     <div class="topbar">
+      <button class="mob-menu-btn" onclick="openMobDrawer()"><i class="fas fa-bars"></i></button>
       <div class="tb-title" id="tb-title">My Dashboard</div>
       <div class="tb-right">
         <button class="lob" onclick="nav('profile')"><i class="fas fa-user"></i>My Profile</button>
@@ -173,6 +255,41 @@ tr:last-child td{border-bottom:none}
 
 <div class="mo" id="mo" onclick="if(event.target===this)closeMo()"><div class="md" id="md"></div></div>
 <div id="toast"></div>
+
+<!-- Mobile Bottom Nav -->
+<div class="mob-nav">
+  <div class="mob-nav-item on" id="mn-dashboard" onclick="nav('dashboard');setMobNav('dashboard')"><i class="fas fa-house"></i><span>Home</span></div>
+  <div class="mob-nav-item" id="mn-attendance" onclick="nav('attendance');setMobNav('attendance')"><i class="fas fa-fingerprint"></i><span>Attend</span></div>
+  <div class="mob-nav-item" id="mn-leaves" onclick="nav('leaves');setMobNav('leaves')"><i class="fas fa-umbrella-beach"></i><span>Leaves</span></div>
+  <div class="mob-nav-item" id="mn-payslip" onclick="nav('payslip');setMobNav('payslip')"><i class="fas fa-file-invoice-dollar"></i><span>Payslip</span></div>
+  <div class="mob-nav-item" id="mn-more" onclick="openMobDrawer()"><div class="mob-nav-dot" id="mob-ann-dot"></div><i class="fas fa-bars"></i><span>More</span></div>
+</div>
+
+<!-- Mobile Drawer -->
+<div class="mob-drawer" id="mob-drawer">
+  <div class="mob-drawer-bg" onclick="closeMobDrawer()"></div>
+  <div class="mob-drawer-panel">
+    <div class="sb-hd"><div class="sb-ico"><i class="fas fa-people-group"></i></div><span class="sb-title">PeopleCore</span><button class="mob-drawer-close" onclick="closeMobDrawer()"><i class="fas fa-times"></i></button></div>
+    <div class="sb-user"><div class="av" id="mob-av" style="background:#4F46E5">--</div><div style="overflow:hidden"><div class="u-name" id="mob-name">Loading…</div><div class="u-role" id="mob-role">Employee</div></div></div>
+    <nav class="sb-nav">
+      <div class="nl">My Workspace</div>
+      <div class="ni" onclick="nav('dashboard');closeMobDrawer()"><i class="fas fa-house"></i>My Dashboard</div>
+      <div class="ni" onclick="nav('attendance');closeMobDrawer()"><i class="fas fa-fingerprint"></i>My Attendance</div>
+      <div class="ni" onclick="nav('leaves');closeMobDrawer()"><i class="fas fa-umbrella-beach"></i>My Leaves</div>
+      <div class="nl">HR Services</div>
+      <div class="ni" onclick="nav('payslip');closeMobDrawer()"><i class="fas fa-file-invoice-dollar"></i>Payslip</div>
+      <div class="ni" onclick="nav('holidays');closeMobDrawer()"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" onclick="nav('wellbeing');closeMobDrawer()"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
+      <div class="ni" onclick="nav('announcements');closeMobDrawer()"><i class="fas fa-bullhorn"></i>Announcements<span id="mob-ann-badge" style="display:none;background:#EF4444;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:auto">!</span></div>
+      <div class="ni" onclick="nav('documents');closeMobDrawer()"><i class="fas fa-folder-open"></i>My Documents</div>
+      <div class="ni" onclick="nav('directory');closeMobDrawer()"><i class="fas fa-address-book"></i>Directory</div>
+      <div class="ni" id="mob-nav-myteam" style="display:none" onclick="nav('myteam');closeMobDrawer()"><i class="fas fa-users-gear"></i>My Team</div>
+      <div class="nl">Account</div>
+      <div class="ni" onclick="nav('profile');closeMobDrawer()"><i class="fas fa-user-circle"></i>My Profile</div>
+    </nav>
+    <div class="sb-ft"><div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div></div>
+  </div>
+</div>
 
 <script src="config.js"></script>
 <script>
@@ -188,17 +305,31 @@ async function init(){
   if(['resigned','terminated','absconded','inactive'].includes(emp.status)){await sb.auth.signOut();location.href='index.html';return;}
   me=emp;
   setAv('sb-av',me.first_name,me.last_name,me.avatar_color);
+  setAv('mob-av',me.first_name,me.last_name,me.avatar_color);
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
   document.getElementById('sb-role').textContent=me.designation||me.department||'Employee';
+  document.getElementById('mob-name').textContent=me.first_name+' '+me.last_name;
+  document.getElementById('mob-role').textContent=me.designation||me.department||'Employee';
   await Promise.all([loadMyData(),loadHolidays(),loadAllEmp(),loadCompanyOffs()]);
   await updateAnnBadge();
   // Show My Team tab only for managers
   if(me.is_manager){
     const teamNav=document.getElementById('nav-myteam');
     if(teamNav)teamNav.style.display='flex';
+    const mobTeamNav=document.getElementById('mob-nav-myteam');
+    if(mobTeamNav)mobTeamNav.style.display='flex';
   }
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>nav(el.dataset.pg));
   nav('dashboard');
+}
+
+function openMobDrawer(){document.getElementById('mob-drawer').classList.add('op');document.body.style.overflow='hidden';}
+function closeMobDrawer(){document.getElementById('mob-drawer').classList.remove('op');document.body.style.overflow='';}
+
+function setMobNav(pg){
+  document.querySelectorAll('.mob-nav-item').forEach(el=>el.classList.remove('on'));
+  const el=document.getElementById('mn-'+pg);
+  if(el)el.classList.add('on');
 }
 
 async function loadMyData(){
@@ -226,6 +357,7 @@ async function loadAllEmp(){const {data}=await sb.from('employees').select('id,f
 
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
+  setMobNav(pg);
   const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',documents:'My Documents',myteam:'My Team',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   clearInterval(clockTimer);
@@ -1095,9 +1227,16 @@ async function updateAnnBadge(){
   const readIds=new Set((reads||[]).map(r=>r.announcement_id));
   const unread=anns.filter(a=>!readIds.has(a.id)).length;
   const badge=document.getElementById('ann-badge');
+  const mobBadge=document.getElementById('mob-ann-badge');
+  const mobDot=document.getElementById('mob-ann-dot');
   if(badge){badge.style.display=unread>0?'inline-flex':'none';badge.textContent=unread;}
+  if(mobBadge){mobBadge.style.display=unread>0?'inline-flex':'none';mobBadge.textContent=unread;}
+  if(mobDot){mobDot.classList.toggle('show',unread>0);}
 }
-function hideBadge(){const b=document.getElementById('ann-badge');if(b)b.style.display='none';}
+function hideBadge(){
+  ['ann-badge','mob-ann-badge'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='none';});
+  const d=document.getElementById('mob-ann-dot');if(d)d.classList.remove('show');
+}
 
 // ─── MY DOCUMENTS ───
 async function renderMyDocuments(){

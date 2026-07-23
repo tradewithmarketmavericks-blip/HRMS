@@ -129,7 +129,7 @@ textarea.i{resize:vertical;min-height:76px}
 .info-box{background:var(--wal);border-radius:8px;padding:11px;font-size:12px;color:#92400E;margin-top:8px}
 .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}
 .confirm-overlay.op{display:flex}
-.confirm-box{background:white;border-radius:12px;padding:28px;width:380px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+.confirm-box{background:white;border-radius:12px;padding:28px;width:380px;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.2)}
 .confirm-box h3{font-size:16px;font-weight:700;margin-bottom:8px}
 .confirm-box p{font-size:13px;color:var(--tm);margin-bottom:20px}
 .confirm-actions{display:flex;gap:10px;justify-content:center}
@@ -140,7 +140,66 @@ textarea.i{resize:vertical;min-height:76px}
 #toast.er{background:var(--er)}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
-@media(max-width:768px){.sb{width:0;overflow:hidden}.sg{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .sb{display:none}
+  .shell{flex-direction:column}
+  .main{height:100vh;padding-bottom:64px}
+  .topbar{padding:0 14px;height:52px}
+  .tb-right{display:none}
+  .tb-search{display:none}
+  .ct{padding:12px}
+  .sg{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .sc{padding:12px}
+  .sc .sv{font-size:20px}
+  .sc .si{width:30px;height:30px;font-size:12px;right:10px}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .mo{padding:0;align-items:flex-end}
+  .md{border-radius:18px 18px 0 0;max-width:100%;max-height:92vh}
+  .mh{border-radius:18px 18px 0 0;padding:14px 16px}
+  .mb2{padding:14px 16px}
+  .mf{padding:12px 16px}
+  .fr{grid-template-columns:1fr;gap:10px}
+  .fr.f1{grid-template-columns:1fr}
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:500px}
+  th,td{padding:8px 10px;font-size:12px}
+  .ph{margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .ph h2{font-size:16px}
+  .card{margin-bottom:12px}
+  .ch{padding:11px 14px;flex-wrap:wrap;gap:7px}
+  .ct2{padding:13px}
+  .btn{padding:7px 11px;font-size:12px}
+  .bsm{padding:5px 8px;font-size:11px}
+  #toast{bottom:74px;right:12px;left:12px;text-align:center;max-width:none}
+  .confirm-box{width:calc(100% - 32px);padding:20px}
+  .clock-card{padding:18px 14px}
+  /* Admin specific */
+  .leave-filters,.att-filters{flex-direction:column;gap:8px}
+}
+@media(max-width:400px){
+  .sg{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr}
+  .sc .sv{font-size:18px}
+}
+/* Mobile bottom nav */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--bd);z-index:500;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+@media(max-width:768px){.mob-nav{display:flex}}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;color:var(--tl);transition:color .15s;position:relative}
+.mob-nav-item.on{color:var(--p)}
+.mob-nav-item i{font-size:18px;margin-bottom:3px}
+.mob-nav-item span{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.mob-nav-badge{position:absolute;top:5px;right:calc(50% - 18px);background:var(--er);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center}
+.mob-nav-badge.show{display:flex}
+/* Mobile hamburger */
+.mob-menu-btn{display:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--bd);background:white;align-items:center;justify-content:center;cursor:pointer;color:var(--tm);flex-shrink:0;margin-right:8px}
+@media(max-width:768px){.mob-menu-btn{display:flex}}
+/* Mobile drawer */
+.mob-drawer{display:none;position:fixed;inset:0;z-index:900}
+.mob-drawer.op{display:flex}
+.mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.mob-drawer-panel{position:relative;width:260px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
+.mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 </style>
 </head>
 <body>
@@ -171,6 +230,7 @@ textarea.i{resize:vertical;min-height:76px}
   </div>
   <div class="main">
     <div class="topbar">
+      <button class="mob-menu-btn" onclick="openMobDrawer()"><i class="fas fa-bars"></i></button>
       <div class="tb-title" id="tb-title">Dashboard</div>
       <div class="tb-search"><i class="fas fa-search"></i><input id="search-inp" placeholder="Search employees…" oninput="searchEmp(this.value)"></div>
       <div class="tb-right">
@@ -181,7 +241,43 @@ textarea.i{resize:vertical;min-height:76px}
   </div>
 </div>
 
-<div class="mo" id="mo" onclick="if(event.target===this)closeMo()"><div class="md" id="md"></div></div>
+<!-- Mobile Bottom Nav (Admin) -->
+<div class="mob-nav">
+  <div class="mob-nav-item on" id="amn-dashboard" onclick="navigate('dashboard');setAdminMobNav('dashboard')"><i class="fas fa-house"></i><span>Home</span></div>
+  <div class="mob-nav-item" id="amn-employees" onclick="navigate('employees');setAdminMobNav('employees')"><i class="fas fa-users"></i><span>Staff</span></div>
+  <div class="mob-nav-item" id="amn-leaves" onclick="navigate('leaves');setAdminMobNav('leaves')"><div class="mob-nav-badge" id="admin-leave-badge"></div><i class="fas fa-calendar-check"></i><span>Leaves</span></div>
+  <div class="mob-nav-item" id="amn-payroll" onclick="navigate('payroll');setAdminMobNav('payroll')"><i class="fas fa-money-bill-wave"></i><span>Payroll</span></div>
+  <div class="mob-nav-item" id="amn-more" onclick="openMobDrawer()"><i class="fas fa-bars"></i><span>More</span></div>
+</div>
+
+<!-- Mobile Drawer (Admin) -->
+<div class="mob-drawer" id="mob-drawer">
+  <div class="mob-drawer-bg" onclick="closeMobDrawer()"></div>
+  <div class="mob-drawer-panel">
+    <div class="sb-hd"><div class="sb-ico"><i class="fas fa-people-group"></i></div><span class="sb-title">PeopleCore</span><button class="mob-drawer-close" onclick="closeMobDrawer()"><i class="fas fa-times"></i></button></div>
+    <div class="sb-user"><div class="av" id="mob-av" style="background:#4F46E5">--</div><div style="overflow:hidden"><div class="u-name" id="mob-name">Admin</div><div class="u-role" style="color:var(--sbt);font-size:11px">Administrator</div></div></div>
+    <nav class="sb-nav">
+      <div class="nl">Overview</div>
+      <div class="ni" onclick="navigate('dashboard');closeMobDrawer()"><i class="fas fa-house"></i>Dashboard</div>
+      <div class="ni" onclick="navigate('employees');closeMobDrawer()"><i class="fas fa-users"></i>Employees</div>
+      <div class="nl">Time & Attendance</div>
+      <div class="ni" onclick="navigate('attendance');closeMobDrawer()"><i class="fas fa-fingerprint"></i>Attendance</div>
+      <div class="ni" onclick="navigate('leaves');closeMobDrawer()"><i class="fas fa-umbrella-beach"></i>Leave Management</div>
+      <div class="nl">Finance</div>
+      <div class="ni" onclick="navigate('payroll');closeMobDrawer()"><i class="fas fa-money-bill-wave"></i>Payroll</div>
+      <div class="ni" onclick="navigate('incentives');closeMobDrawer()"><i class="fas fa-award"></i>Bonuses & Incentives</div>
+      <div class="nl">Company</div>
+      <div class="ni" onclick="navigate('holidays');closeMobDrawer()"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" onclick="navigate('departments');closeMobDrawer()"><i class="fas fa-sitemap"></i>Departments</div>
+      <div class="nl">People</div>
+      <div class="ni" onclick="navigate('wellbeing');closeMobDrawer()"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
+      <div class="ni" onclick="navigate('announcements');closeMobDrawer()"><i class="fas fa-bullhorn"></i>Announcements</div>
+      <div class="ni" onclick="navigate('documents');closeMobDrawer()"><i class="fas fa-folder-open"></i>Documents</div>
+      <div class="ni" onclick="navigate('reports');closeMobDrawer()"><i class="fas fa-chart-bar"></i>Reports</div>
+    </nav>
+    <div class="sb-ft"><div class="ni" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</div></div>
+  </div>
+</div>
 
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-box">
@@ -213,7 +309,9 @@ async function init(){
   if(!emp||emp.role!=='admin'){await sb.auth.signOut();location.href='index.html';return;}
   me=emp;
   setAvatar('sb-av',me.first_name,me.last_name,me.avatar_color);
+  setAvatar('mob-av',me.first_name,me.last_name,me.avatar_color);
   document.getElementById('sb-name').textContent=me.first_name+' '+me.last_name;
+  document.getElementById('mob-name').textContent=me.first_name+' '+me.last_name;
   await Promise.all([loadEmployees(),loadDepartments(),loadHolidays()]);
   await updateBadge();
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.onclick=()=>navigate(el.dataset.pg));
@@ -236,10 +334,18 @@ async function updateBadge(){
 
 function navigate(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
+  setAdminMobNav(pg);
   const titles={dashboard:'Dashboard',employees:'Employees',attendance:'Attendance',leaves:'Leave Management',payroll:'Payroll',incentives:'Bonuses & Incentives',holidays:'Holiday Calendar',departments:'Departments',wellbeing:'Employee Wellbeing',announcements:'Announcements',documents:'Documents',reports:'Reports & Analytics'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
   ({dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,documents:renderDocuments,reports:renderReports})[pg]?.();
+}
+
+function openMobDrawer(){document.getElementById('mob-drawer').classList.add('op');document.body.style.overflow='hidden';}
+function closeMobDrawer(){document.getElementById('mob-drawer').classList.remove('op');document.body.style.overflow='';}
+function setAdminMobNav(pg){
+  document.querySelectorAll('.mob-nav-item').forEach(el=>el.classList.remove('on'));
+  const el=document.getElementById('amn-'+pg);if(el)el.classList.add('on');
 }
 
 // ─── DASHBOARD ───
