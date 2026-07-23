@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PeopleCore HRMS — Login</title>
+<title>Market Mavericks HRMS — Login</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1E1B4B 0%,#312E81 50%,#4F46E5 100%)}
 .card{background:white;border-radius:18px;padding:44px 38px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.3)}
 .logo{text-align:center;margin-bottom:28px}
-.logo-icon{width:56px;height:56px;background:#4F46E5;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
-.logo-icon svg{fill:white;width:26px;height:26px}
-h1{font-size:22px;font-weight:700;color:#1E293B}
-.sub{font-size:13px;color:#64748B;margin-top:3px}
+.logo img{height:64px;object-fit:contain;margin-bottom:10px}
+h1{font-size:20px;font-weight:800;color:#1E293B}
+.sub{font-size:12px;color:#64748B;margin-top:3px}
 .tabs{display:flex;background:#F8FAFC;border-radius:10px;padding:4px;gap:4px;margin-bottom:24px}
 .tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:#64748B;border:none;background:none;transition:all .2s}
 .tab.active{background:white;color:#4F46E5;box-shadow:0 1px 3px rgba(0,0,0,.1)}
@@ -45,11 +44,9 @@ input:focus{border-color:#4F46E5}
 <body>
 <div class="card">
   <div class="logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-    </div>
-    <h1>PeopleCore</h1>
-    <p class="sub">Human Resource Management System</p>
+    <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" alt="Market Mavericks">
+    <h1>Market Mavericks Trading Academy</h1>
+    <p class="sub">HR Management Portal</p>
   </div>
 
   <!-- MAIN LOGIN -->
