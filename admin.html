@@ -290,6 +290,8 @@ textarea.i{resize:vertical;min-height:76px}
   </div>
 </div>
 
+<div class="mo" id="mo" onclick="if(event.target===this)closeMo()"><div class="md" id="md"></div></div>
+
 <div id="toast"></div>
 
 <script src="config.js"></script>
@@ -985,9 +987,12 @@ function runPayroll(){
     // Check if already locked
     const {data:existing}=await sb.from('payroll').select('locked').eq('month',month).eq('year',year).limit(1);
     if(existing&&existing.length&&existing[0].locked){toast('Payroll for this month is locked and cannot be reprocessed.','wa');return;}
+    // Fetch LOP balances fresh for accuracy
+    const {data:lopData}=await sb.from('leave_balances').select('employee_id,used_days').eq('leave_type','LOP').eq('year',year);
+    const lopMap={};(lopData||[]).forEach(l=>lopMap[l.employee_id]=l.used_days||0);
     const rows=employees.filter(e=>['active','on-leave','probation'].includes(e.status)).map(e=>{
       const sal=e.gross_salary||0;
-      const lopDays=lopMap?.[e.id]||0;
+      const lopDays=lopMap[e.id]||0;
       const lopDed=lopDays*Math.round(sal/26);
       return {employee_id:e.id,month,year,gross_salary:sal,lop_days:lopDays,lop_deduction:lopDed,net_pay:sal-lopDed,status:'processed',processed_at:now.toISOString()};
     });
