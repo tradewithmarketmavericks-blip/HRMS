@@ -2,8 +2,8 @@
   "name": "Market Mavericks HRMS",
   "short_name": "MM HRMS",
   "description": "Market Mavericks Trading Academy — HR Management Portal",
-  "start_url": "/HRMS/index.html",
-  "scope": "/HRMS/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#1C1C2E",
@@ -25,13 +25,13 @@
   ],
   "shortcuts": [
     {
-      "name": "My Dashboard",
-      "url": "/HRMS/employee.html",
+      "name": "Employee Portal",
+      "url": "employee.html",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Admin Portal",
-      "url": "/HRMS/admin.html",
+      "url": "admin.html",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
