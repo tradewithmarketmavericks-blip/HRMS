@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MM HRMS">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Market Mavericks HRMS — My Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -154,7 +162,7 @@ tr:last-child td{border-bottom:none}
   .mo{padding:0;align-items:flex-end}
   .md{border-radius:18px 18px 0 0;max-width:100%;max-height:92vh}
   .mh{border-radius:18px 18px 0 0;padding:14px 16px}
-  .mb2{padding:14px 16px}
+  .mb2{padding:14px 16px;max-height:75vh;overflow-y:auto}
   .mf{padding:12px 16px}
   /* Forms */
   .fr{grid-template-columns:1fr;gap:10px}
@@ -166,11 +174,11 @@ tr:last-child td{border-bottom:none}
   /* Clock card */
   .clock-card{padding:18px 14px}
   .clock-time{font-size:34px}
-  /* Quick actions */
-  .qa{gap:6px}
-  .qa-btn{padding:7px 10px;font-size:12px}
+  /* Quick actions - wrap into 3 per row */
+  .qa{gap:6px;flex-wrap:wrap}
+  .qa-btn{padding:7px 10px;font-size:12px;flex:1;min-width:calc(33% - 6px);justify-content:center}
   /* Page header */
-  .ph{margin-bottom:12px}
+  .ph{margin-bottom:12px;flex-wrap:wrap;gap:8px}
   .ph h2{font-size:16px}
   /* Cards */
   .card{margin-bottom:12px}
@@ -179,23 +187,38 @@ tr:last-child td{border-bottom:none}
   /* Buttons */
   .btn{padding:7px 11px;font-size:12px}
   .bsm{padding:5px 8px;font-size:11px}
-  /* Toast bottom position adjusted */
-  #toast{bottom:74px;right:12px;left:12px;text-align:center}
+  /* Toast bottom position adjusted for bottom nav */
+  #toast{bottom:74px;right:12px;left:12px;text-align:center;max-width:none}
   /* Directory grid */
   .g3{grid-template-columns:1fr}
-  /* Payslip */
+  /* Payslip row font */
   .payslip-row{font-size:12px}
-  /* Wellbeing ratings */
-  .well-survey .rating label{width:28px;height:28px;font-size:11px}
-  /* Quick action row wrap */
+  /* Flex wrap for action buttons */
   .flex.gap2{flex-wrap:wrap}
-  /* hide topbar profile button */
-  .tb-right .lob:first-child{display:none}
+  /* Leave balance bars */
+  .lb{margin-bottom:10px}
+  /* Inputs full width on mobile */
+  .i{font-size:16px}  /* prevents iOS zoom on focus */
+  /* Inline grid overrides for payslip */
+  [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr 1fr !important}
+  [style*="grid-template-columns:1fr 1fr;gap:28px"]{grid-template-columns:1fr !important}
+  [style*="grid-template-columns:1fr 1fr;gap:24px"]{grid-template-columns:1fr !important}
+  [style*="grid-template-columns:1fr 1fr;gap:20px"]{grid-template-columns:1fr !important}
+  /* Payslip print area */
+  #payslip-print{padding:12px !important}
+  /* Directory cards */
+  .dir-card .ct2{padding:14px 12px}
+  /* Attendance log status */
+  .ri{flex-wrap:wrap;gap:8px}
+  /* Profile grid */
+  .profile-grid{grid-template-columns:1fr !important}
 }
 @media(max-width:400px){
   .sg{grid-template-columns:1fr 1fr}
   .sc .sv{font-size:18px}
-  .clock-time{font-size:30px}
+  .clock-time{font-size:28px}
+  .qa-btn{min-width:calc(50% - 6px)}
+  [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr !important}
 }
 /* ─── MOBILE BOTTOM NAV ─── */
 .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--bd);z-index:500;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
@@ -1210,7 +1233,16 @@ function printEmpPayslip(){
         <div style="margin-top:2px">PeopleCore HRMS</div>
       </div>
     </div>
-  </div></body></html>`;
+  </div>  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(r => console.log('SW registered'))
+          .catch(e => console.log('SW failed:', e));
+      });
+    }
+  </script>
+</body></html>`;
   const w=window.open('','_blank');
   w.document.write(html);
   w.document.close();
@@ -1314,5 +1346,14 @@ async function logout(){clearInterval(clockTimer);await sb.auth.signOut();locati
 
 init();
 </script>
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(r => console.log('SW registered'))
+          .catch(e => console.log('SW failed:', e));
+      });
+    }
+  </script>
 </body>
 </html>
