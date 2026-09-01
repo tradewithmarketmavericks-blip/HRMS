@@ -1186,14 +1186,9 @@ function printPayslip(){
   const content=document.getElementById('payslip-print')?.innerHTML;
   if(!content){toast('Nothing to print','wa');return;}
   const w=window.open('','_blank');
-  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+document.getElementById('payslip-print').outerHTML+'<script>
-// Fix dynamic viewport height (prevents black bar from browser chrome)
-function setAppHeight(){
-  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-}
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
-setAppHeight();
+  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>
+'+document.getElementById('payslip-print').outerHTML+'
+<script>
 </script>
 </body></html>';
   w.document.write(html);
@@ -2098,13 +2093,11 @@ init();
       });
     }
   </script>
+
 <script>
-// Fix dynamic viewport height (prevents black bar from browser chrome)
-function setAppHeight(){
-  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-}
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
+function setAppHeight(){document.documentElement.style.setProperty('--app-height',window.innerHeight+'px');}
+window.addEventListener('resize',setAppHeight);
+window.addEventListener('orientationchange',function(){setTimeout(setAppHeight,100);});
 setAppHeight();
 </script>
 </body>

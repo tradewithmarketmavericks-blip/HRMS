@@ -1190,7 +1190,7 @@ function printEmpPayslip(){
   <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white}
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:0.5cm}}</style>
   </head><body>
-  <div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;background:white;color:#111;position:relative;overflow:hidden">
+<div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;background:white;color:#111;position:relative;overflow:hidden">
     <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);opacity:.035;pointer-events:none;z-index:0">
       <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="width:380px">
     </div>
@@ -1257,14 +1257,8 @@ function printEmpPayslip(){
         <div style="margin-top:2px">PeopleCore HRMS</div>
       </div>
     </div>
-  </div><script>
-// Fix dynamic viewport height (prevents black bar from browser chrome)
-function setAppHeight(){
-  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-}
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
-setAppHeight();
+  </div>
+<script>
 </script>
 </body></html>`;
   const w=window.open('','_blank');
@@ -1379,13 +1373,11 @@ init();
       });
     }
   </script>
+
 <script>
-// Fix dynamic viewport height (prevents black bar from browser chrome)
-function setAppHeight(){
-  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-}
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
+function setAppHeight(){document.documentElement.style.setProperty('--app-height',window.innerHeight+'px');}
+window.addEventListener('resize',setAppHeight);
+window.addEventListener('orientationchange',function(){setTimeout(setAppHeight,100);});
 setAppHeight();
 </script>
 </body>
