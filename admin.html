@@ -228,7 +228,6 @@ textarea.i{resize:vertical;min-height:76px}
 }
 body {
   height: var(--app-height);
-  overflow: hidden;
 }
 .shell {
   height: var(--app-height);
@@ -278,6 +277,7 @@ body {
       <button class="mob-menu-btn" onclick="openMobDrawer()"><i class="fas fa-bars"></i></button>
       <div class="tb-title" id="tb-title">Dashboard</div>
       <div class="tb-search"><i class="fas fa-search"></i><input id="search-inp" placeholder="Search employees…" oninput="searchEmp(this.value)"></div>
+      <button id="pwa-install-btn" onclick="installPWA()" style="display:none;align-items:center;gap:5px;background:#4F46E5;color:white;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0"><i class="fas fa-download"></i> Install</button>
       <div class="tb-right">
         <button class="lob" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Sign out</button>
       </div>
