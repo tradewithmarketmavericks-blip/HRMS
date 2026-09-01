@@ -1,31 +1,35 @@
-// Market Mavericks HRMS — Service Worker
-const CACHE = 'mm-hrms-v3';
+const CACHE = 'mm-hrms-v5';
 const ASSETS = [
   'index.html',
-  'admin.html',
+  'admin.html', 
   'employee.html',
   'config.js',
   'logo.png',
   'icon-192.png',
   'icon-512.png',
   'manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
 ];
 
 self.addEventListener('install', e => {
+  // Force immediate activation - don't wait
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-      .catch(err => console.log('Cache install error:', err))
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).catch(err => console.log('Cache error:', err))
   );
 });
 
 self.addEventListener('activate', e => {
+  // Take control immediately
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then(keys => 
+        Promise.all(keys.filter(k => k !== CACHE).map(k => {
+          console.log('Deleting old cache:', k);
+          return caches.delete(k);
+        }))
+      )
+    ])
   );
 });
 
@@ -43,8 +47,11 @@ self.addEventListener('fetch', e => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request)
-        .then(cached => cached || caches.match('index.html'))
-      )
+      .catch(() => caches.match(e.request).then(cached => cached || caches.match('index.html')))
   );
+});
+
+// Listen for skip message from clients
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
 });
