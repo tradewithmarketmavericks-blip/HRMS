@@ -12,21 +12,22 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Market Mavericks HRMS — Login</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1E1B4B 0%,#312E81 50%,#4F46E5 100%)}
-.card{background:white;border-radius:18px;padding:44px 38px;width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.3)}
-.logo{text-align:center;margin-bottom:28px}
-.logo img{height:64px;object-fit:contain;margin-bottom:10px}
-h1{font-size:20px;font-weight:800;color:#1E293B}
-.sub{font-size:12px;color:#64748B;margin-top:3px}
+body{font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1E1B4B 0%,#312E81 50%,#4F46E5 100%);padding:16px}
+.card{background:white;border-radius:18px;padding:36px 32px;width:100%;max-width:420px;box-shadow:0 25px 60px rgba(0,0,0,0.3)}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{height:56px;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto}
+.logo h1{font-size:18px;font-weight:800;color:#1E293B;margin-bottom:3px}
+.sub{font-size:12px;color:#64748B}
 .tabs{display:flex;background:#F8FAFC;border-radius:10px;padding:4px;gap:4px;margin-bottom:24px}
 .tab{flex:1;padding:9px;text-align:center;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:#64748B;border:none;background:none;transition:all .2s}
 .tab.active{background:white;color:#4F46E5;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .fg{margin-bottom:16px;position:relative}
 label{display:block;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-input{width:100%;padding:11px 40px 11px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:14px;color:#1E293B;outline:none;transition:border-color .2s}
+input{width:100%;padding:11px 40px 11px 14px;border:1.5px solid #E2E8F0;border-radius:8px;font-size:16px;color:#1E293B;outline:none;transition:border-color .2s}
 input:focus{border-color:#4F46E5}
 .eye{position:absolute;right:12px;bottom:11px;cursor:pointer;color:#94A3B8;font-size:16px;user-select:none}
 .eye:hover{color:#4F46E5}
@@ -37,16 +38,19 @@ input:focus{border-color:#4F46E5}
 .fp{text-align:center;margin-top:14px;font-size:13px;color:#64748B}
 .fp a{color:#4F46E5;cursor:pointer;text-decoration:none;font-weight:500}
 .fp a:hover{text-decoration:underline}
-/* Forgot password panel */
 .fp-panel{display:none}
 .fp-panel.show{display:block}
 .main-panel{display:block}
 .main-panel.hide{display:none}
 .back{background:none;border:none;color:#4F46E5;cursor:pointer;font-size:13px;font-weight:500;padding:0;margin-bottom:16px;display:flex;align-items:center;gap:5px}
 .ok-box{background:#D1FAE5;color:#065F46;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
-/* Reset password panel */
 .rp-panel{display:none}
 .rp-panel.show{display:block}
+@media(max-width:480px){
+  .card{padding:28px 20px;border-radius:14px}
+  .logo img{height:48px}
+  .logo h1{font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -57,6 +61,7 @@ input:focus{border-color:#4F46E5}
     <button id="install-btn" onclick="installPWA()" style="background:white;color:#4F46E5;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%"><i class="fas fa-download"></i> Install App</button>
     <div style="margin-top:10px;color:rgba(255,255,255,.6);font-size:11px">iPhone users: tap <strong>Share → Add to Home Screen</strong></div>
   </div>
+  <div class="logo">
     <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" alt="Market Mavericks">
     <h1>Market Mavericks Trading Academy</h1>
     <p class="sub">HR Management Portal</p>
