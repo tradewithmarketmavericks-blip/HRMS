@@ -361,7 +361,7 @@ async function loadMyData(){
   const [l,b,a,ta,hw,rg]=await Promise.all([
     sb.from('leave_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
     sb.from('leave_balances').select('*').eq('employee_id',me.id).eq('year',now.getFullYear()),
-    sb.from('attendance').select('*').eq('employee_id',me.id).order('date',{ascending:false}).limit(30),
+    sb.from('attendance').select('*').eq('employee_id',me.id).gte('date',new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0]).order('date',{ascending:false}),
     sb.from('attendance').select('*').eq('employee_id',me.id).eq('date',today).maybeSingle(),
     sb.from('holiday_work_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),
     sb.from('regularisation_requests').select('*').eq('employee_id',me.id).order('created_at',{ascending:false}),

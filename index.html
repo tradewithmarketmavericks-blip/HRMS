@@ -51,7 +51,12 @@ input:focus{border-color:#4F46E5}
 </head>
 <body>
 <div class="card">
-  <div class="logo">
+  <div id="install-banner" style="display:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);border-radius:12px;padding:14px 16px;margin-bottom:20px;text-align:center">
+    <div style="color:white;font-size:13px;font-weight:600;margin-bottom:10px"><i class="fas fa-mobile-screen-button"></i> Install as App on your phone</div>
+    <div style="color:rgba(255,255,255,.8);font-size:11px;margin-bottom:12px">Get quick access from your home screen — works like a native app</div>
+    <button id="install-btn" onclick="installPWA()" style="background:white;color:#4F46E5;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%"><i class="fas fa-download"></i> Install App</button>
+    <div style="margin-top:10px;color:rgba(255,255,255,.6);font-size:11px">iPhone users: tap <strong>Share → Add to Home Screen</strong></div>
+  </div>
     <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" alt="Market Mavericks">
     <h1>Market Mavericks Trading Academy</h1>
     <p class="sub">HR Management Portal</p>
@@ -254,6 +259,33 @@ async function doReset() {
           .then(r => console.log('SW registered, scope:', r.scope))
           .catch(e => console.log('SW failed:', e));
       });
+    }
+    // PWA Install prompt
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('install-banner').style.display = 'block';
+    });
+    function installPWA(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(r => {
+          if(r.outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
+          deferredPrompt = null;
+        });
+      }
+    }
+    // Show banner if not already installed
+    window.addEventListener('appinstalled', () => {
+      document.getElementById('install-banner').style.display = 'none';
+    });
+    // Always show iOS instructions on Safari
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+    if(isIOS && !isInStandaloneMode){
+      document.getElementById('install-banner').style.display = 'block';
+      document.getElementById('install-btn').style.display = 'none';
     }
   </script>
 </body>
