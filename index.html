@@ -55,11 +55,14 @@ input:focus{border-color:#4F46E5}
 </head>
 <body>
 <div class="card">
-  <div id="install-banner" style="display:none;background:linear-gradient(135deg,#4F46E5,#7C3AED);border-radius:12px;padding:14px 16px;margin-bottom:20px;text-align:center">
-    <div style="color:white;font-size:13px;font-weight:600;margin-bottom:10px"><i class="fas fa-mobile-screen-button"></i> Install as App on your phone</div>
-    <div style="color:rgba(255,255,255,.8);font-size:11px;margin-bottom:12px">Get quick access from your home screen — works like a native app</div>
-    <button id="install-btn" onclick="installPWA()" style="background:white;color:#4F46E5;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%"><i class="fas fa-download"></i> Install App</button>
-    <div style="margin-top:10px;color:rgba(255,255,255,.6);font-size:11px">iPhone users: tap <strong>Share → Add to Home Screen</strong></div>
+  <div id="install-banner" style="display:none;background:linear-gradient(135deg,#1C1C2E,#4F46E5);border-radius:12px;padding:14px 16px;margin-bottom:20px;text-align:center">
+    <div style="color:white;font-size:13px;font-weight:700;margin-bottom:6px"><i class="fas fa-mobile-screen-button"></i> Install as App</div>
+    <div style="color:rgba(255,255,255,.75);font-size:11px;margin-bottom:12px">Access Market Mavericks HRMS from your home screen</div>
+    <button id="install-btn" onclick="installPWA()" style="background:white;color:#4F46E5;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-bottom:8px"><i class="fas fa-download"></i> Install App</button>
+    <div id="manual-instructions" style="display:none;background:rgba(255,255,255,.1);border-radius:8px;padding:10px;margin-top:4px;font-size:11px;color:white;text-align:left">
+      <div style="margin-bottom:4px"><strong>Android:</strong> Tap ⋮ menu → <em>Add to Home screen</em></div>
+      <div><strong>iPhone:</strong> Tap <i class="fas fa-arrow-up-from-bracket"></i> Share → <em>Add to Home Screen</em></div>
+    </div>
   </div>
   <div class="logo">
     <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" alt="Market Mavericks">
@@ -265,33 +268,56 @@ async function doReset() {
           .catch(e => console.log('SW failed:', e));
       });
     }
-    // PWA Install prompt
-    let deferredPrompt;
+
+    let deferredPrompt = null;
+
+    // Capture install prompt if browser offers it
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
-      document.getElementById('install-banner').style.display = 'block';
+      showInstallBanner();
     });
+
+    function showInstallBanner(){
+      const banner = document.getElementById('install-banner');
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if(!isStandalone) banner.style.display = 'block';
+    }
+
     function installPWA(){
       if(deferredPrompt){
+        // Android Chrome - use native prompt
         deferredPrompt.prompt();
         deferredPrompt.userChoice.then(r => {
           if(r.outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
           deferredPrompt = null;
         });
+      } else {
+        // Fallback - show manual instructions
+        document.getElementById('manual-instructions').style.display = 'block';
+        document.getElementById('install-btn').style.display = 'none';
       }
     }
-    // Show banner if not already installed
+
     window.addEventListener('appinstalled', () => {
       document.getElementById('install-banner').style.display = 'none';
     });
-    // Always show iOS instructions on Safari
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-    if(isIOS && !isInStandaloneMode){
-      document.getElementById('install-banner').style.display = 'block';
-      document.getElementById('install-btn').style.display = 'none';
-    }
+
+    // Show banner on all mobile devices
+    window.addEventListener('DOMContentLoaded', () => {
+      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+      if(isMobile && !isStandalone){
+        document.getElementById('install-banner').style.display = 'block';
+        if(isIOS){
+          // iOS Safari - no install prompt API, show manual steps
+          document.getElementById('install-btn').style.display = 'none';
+          document.getElementById('manual-instructions').style.display = 'block';
+        }
+      }
+    });
   </script>
 </body>
 </html>
