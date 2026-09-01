@@ -222,24 +222,10 @@ textarea.i{resize:vertical;min-height:76px}
 .mob-drawer-panel{position:relative;width:260px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
 .mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 
-
+@supports (padding-bottom: env(safe-area-inset-bottom)){
+  .mob-nav{padding-bottom:env(safe-area-inset-bottom);}
   #toast{bottom:calc(74px + env(safe-area-inset-bottom)) !important;}
 }
-
-/* Android gesture bar fix */
-.mob-nav{
-  padding-bottom: env(safe-area-inset-bottom, 12px);
-  height: auto;
-  min-height: 56px;
-}
-.mob-nav-item{
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-.main{
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 12px));
-}
-
 </style>
 </head>
 <body>
@@ -1182,49 +1168,7 @@ function printPayslip(){
   const content=document.getElementById('payslip-print')?.innerHTML;
   if(!content){toast('Nothing to print','wa');return;}
   const w=window.open('','_blank');
-  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+document.getElementById('payslip-print').outerHTML+'<script>
-
-let _dp = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault(); _dp = e;
-});
-window.addEventListener('appinstalled', function() { hidePWABtn(); });
-function showPWABtn() {
-  var b = document.getElementById('pwa-install-btn');
-  if (b) b.style.display = 'flex';
-}
-function hidePWABtn() {
-  var b = document.getElementById('pwa-install-btn');
-  if (b) b.style.display = 'none';
-}
-function installPWA() {
-  if (_dp) {
-    _dp.prompt();
-    _dp.userChoice.then(function(r) {
-      if (r.outcome === 'accepted') hidePWABtn();
-      _dp = null;
-    });
-  } else {
-    alert('To install:\nAndroid: Tap 3-dot menu \u2192 Add to Home screen\niPhone: Tap Share \u2192 Add to Home Screen');
-  }
-}
-(function() {
-  var isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (isMobile && !isStandalone) setTimeout(showPWABtn, 800);
-})();
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistration().then(function(reg) { if (reg) reg.update(); });
-}
-function setAppHeight() {
-  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-}
-window.addEventListener('resize', setAppHeight);
-window.addEventListener('orientationchange', function() { setTimeout(setAppHeight, 100); });
-setAppHeight();
-
-</script>
-</body></html>';
+  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+document.getElementById('payslip-print').outerHTML+'</body></html>';
   w.document.write(html);
   w.document.close();
   w.focus();
@@ -2126,5 +2070,18 @@ init();
           .catch(e => console.log('SW failed:', e));
       });
     }
-  </script></body>
+  </script>
+<script>
+let _dp=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_dp=e;showPWABtn();});
+window.addEventListener('appinstalled',function(){var b=document.getElementById('pwa-install-btn');if(b)b.style.display='none';});
+function showPWABtn(){var b=document.getElementById('pwa-install-btn');if(!b)return;var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;if(!s)b.style.display='flex';}
+function installPWA(){if(_dp){_dp.prompt();_dp.userChoice.then(function(r){if(r.outcome==='accepted'){var b=document.getElementById('pwa-install-btn');if(b)b.style.display='none';}_dp=null;});}else{var t=document.getElementById('toast');if(t){t.textContent='Tap menu → Add to Home Screen';t.className='show';setTimeout(function(){t.className='';},3000);}}}
+window.addEventListener('DOMContentLoaded',function(){var m=/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;if(m&&!s)setTimeout(showPWABtn,800);});
+function setAppHeight(){document.documentElement.style.setProperty('--app-height',window.innerHeight+'px');}
+window.addEventListener('resize',setAppHeight);
+window.addEventListener('orientationchange',function(){setTimeout(setAppHeight,100);});
+setAppHeight();
+</script>
+</body>
 </html>

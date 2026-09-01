@@ -1,4 +1,4 @@
-const CACHE = 'mm-hrms-v5';
+const CACHE = 'mm-hrms-v6';
 const ASSETS = [
   'index.html',
   'admin.html', 
