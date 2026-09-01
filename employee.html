@@ -239,28 +239,10 @@ tr:last-child td{border-bottom:none}
 .mob-drawer-panel{position:relative;width:250px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
 .mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 
-/* Fix black bar / browser nav overlap */
-:root {
-  --app-height: 100vh;
+@supports (padding-bottom: env(safe-area-inset-bottom)){
+  .mob-nav{padding-bottom:env(safe-area-inset-bottom);}
+  #toast{bottom:calc(74px + env(safe-area-inset-bottom)) !important;}
 }
-body {
-  height: var(--app-height);
-}
-.shell {
-  height: var(--app-height);
-}
-.main {
-  height: var(--app-height);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.mob-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  bottom: 0;
-}
-#toast {
-  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-}
-
 </style>
 </head>
 <body>
@@ -1190,7 +1172,7 @@ function printEmpPayslip(){
   <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:white}
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:0.5cm}}</style>
   </head><body>
-<div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;background:white;color:#111;position:relative;overflow:hidden">
+  <div style="font-family:Arial,sans-serif;max-width:720px;margin:0 auto;background:white;color:#111;position:relative;overflow:hidden">
     <div style="position:absolute;top:42%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);opacity:.035;pointer-events:none;z-index:0">
       <img src="https://tradewithmarketmavericks-blip.github.io/HRMS/logo.png" style="width:380px">
     </div>
@@ -1257,10 +1239,7 @@ function printEmpPayslip(){
         <div style="margin-top:2px">PeopleCore HRMS</div>
       </div>
     </div>
-  </div>
-<script>
-</script>
-</body></html>`;
+  </div></body></html>`;
   const w=window.open('','_blank');
   w.document.write(html);
   w.document.close();
@@ -1373,8 +1352,13 @@ init();
       });
     }
   </script>
-
 <script>
+let _dp=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_dp=e;showPWABtn();});
+window.addEventListener('appinstalled',function(){var b=document.getElementById('pwa-install-btn');if(b)b.style.display='none';});
+function showPWABtn(){var b=document.getElementById('pwa-install-btn');if(!b)return;var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;if(!s)b.style.display='flex';}
+function installPWA(){if(_dp){_dp.prompt();_dp.userChoice.then(function(r){if(r.outcome==='accepted'){var b=document.getElementById('pwa-install-btn');if(b)b.style.display='none';}_dp=null;});}else{var t=document.getElementById('toast');if(t){t.textContent='Tap menu → Add to Home Screen';t.className='show';setTimeout(function(){t.className='';},3000);}}}
+window.addEventListener('DOMContentLoaded',function(){var m=/android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);var s=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone;if(m&&!s)showPWABtn();});
 function setAppHeight(){document.documentElement.style.setProperty('--app-height',window.innerHeight+'px');}
 window.addEventListener('resize',setAppHeight);
 window.addEventListener('orientationchange',function(){setTimeout(setAppHeight,100);});
