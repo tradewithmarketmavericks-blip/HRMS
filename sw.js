@@ -1,5 +1,5 @@
 // Market Mavericks HRMS — Service Worker
-const CACHE = 'mm-hrms-v2';
+const CACHE = 'mm-hrms-v3';
 const ASSETS = [
   'index.html',
   'admin.html',
