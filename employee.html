@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4F46E5">
   <meta name="mobile-web-app-capable" content="yes">
@@ -221,7 +221,7 @@ tr:last-child td{border-bottom:none}
   [style*="grid-template-columns:1fr 1fr 1fr"]{grid-template-columns:1fr !important}
 }
 /* ─── MOBILE BOTTOM NAV ─── */
-.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--bd);z-index:500;box-shadow:0 -2px 10px rgba(0,0,0,.08)}
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--bd);z-index:500;box-shadow:0 -2px 10px rgba(0,0,0,.08);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(max-width:768px){.mob-nav{display:flex}}
 .mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;cursor:pointer;color:var(--tl);transition:color .15s;min-width:0;position:relative}
 .mob-nav-item.on{color:var(--p)}
@@ -239,13 +239,12 @@ tr:last-child td{border-bottom:none}
 .mob-drawer-panel{position:relative;width:250px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
 .mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
 
-.mob-nav{padding-bottom:12px}
-.mob-nav-item{min-height:48px}
-.main{padding-bottom:76px}
 @media(max-width:768px){
   .mob-nav{padding-bottom:max(12px, env(safe-area-inset-bottom))}
   .main{padding-bottom:max(76px, calc(64px + env(safe-area-inset-bottom)))}
 }
+
+.mob-nav::after{content:'';display:block;position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0px);background:white;z-index:499}
 </style>
 </head>
 <body>

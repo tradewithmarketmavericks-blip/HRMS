@@ -1,6 +1,6 @@
 // Market Mavericks HRMS — Service Worker v7
 // This version aggressively clears old caches and forces update
-const CACHE = 'mm-hrms-v7';
+const CACHE = 'mm-hrms-v8';
 
 self.addEventListener('install', e => {
   console.log('[SW] Installing v7');
