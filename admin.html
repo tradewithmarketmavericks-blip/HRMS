@@ -221,6 +221,30 @@ textarea.i{resize:vertical;min-height:76px}
 .mob-drawer-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
 .mob-drawer-panel{position:relative;width:260px;height:100%;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
 .mob-drawer-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:rgba(255,255,255,.15);border:none;border-radius:6px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
+
+/* Fix black bar / browser nav overlap */
+:root {
+  --app-height: 100vh;
+}
+body {
+  height: var(--app-height);
+  overflow: hidden;
+}
+.shell {
+  height: var(--app-height);
+}
+.main {
+  height: var(--app-height);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.mob-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  bottom: 0;
+}
+#toast {
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
 </style>
 </head>
 <body>
@@ -1162,7 +1186,16 @@ function printPayslip(){
   const content=document.getElementById('payslip-print')?.innerHTML;
   if(!content){toast('Nothing to print','wa');return;}
   const w=window.open('','_blank');
-  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+document.getElementById('payslip-print').outerHTML+'</body></html>';
+  const html='<!DOCTYPE html><html><head><title>Payslip</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>'+document.getElementById('payslip-print').outerHTML+'<script>
+// Fix dynamic viewport height (prevents black bar from browser chrome)
+function setAppHeight(){
+  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+}
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
+setAppHeight();
+</script>
+</body></html>';
   w.document.write(html);
   w.document.close();
   w.focus();
@@ -2065,5 +2098,14 @@ init();
       });
     }
   </script>
+<script>
+// Fix dynamic viewport height (prevents black bar from browser chrome)
+function setAppHeight(){
+  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+}
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 100));
+setAppHeight();
+</script>
 </body>
 </html>
