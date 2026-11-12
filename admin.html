@@ -247,6 +247,8 @@ textarea.i{resize:vertical;min-height:76px}
       <div class="ni" data-pg="incentives"><i class="fas fa-award"></i>Bonuses & Incentives</div>
       <div class="nl">Company</div>
       <div class="ni" data-pg="holidays"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" data-pg="activity"><i class="fas fa-calendar-check"></i>Activity Calendar</div>
+      <div class="ni" data-pg="scorecard"><i class="fas fa-ranking-star"></i>Performance Scorecard</div>
       <div class="ni" data-pg="departments"><i class="fas fa-sitemap"></i>Departments</div>
       <div class="nl">People</div>
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
@@ -291,6 +293,8 @@ textarea.i{resize:vertical;min-height:76px}
       <div class="ni" onclick="navigate('employees');closeMobDrawer()"><i class="fas fa-users"></i>Employees</div>
       <div class="nl">Time & Attendance</div>
       <div class="ni" onclick="navigate('attendance');closeMobDrawer()"><i class="fas fa-fingerprint"></i>Attendance</div>
+      <div class="ni" onclick="navigate('activity');closeMobDrawer()"><i class="fas fa-calendar-check"></i>Activity Calendar</div>
+      <div class="ni" onclick="navigate('scorecard');closeMobDrawer()"><i class="fas fa-ranking-star"></i>Performance Scorecard</div>
       <div class="ni" onclick="navigate('leaves');closeMobDrawer()"><i class="fas fa-umbrella-beach"></i>Leave Management</div>
       <div class="nl">Finance</div>
       <div class="ni" onclick="navigate('payroll');closeMobDrawer()"><i class="fas fa-money-bill-wave"></i>Payroll</div>
@@ -324,6 +328,7 @@ textarea.i{resize:vertical;min-height:76px}
 <div id="toast"></div>
 
 <script src="config.js"></script>
+<script src="perf.js"></script>
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -366,10 +371,10 @@ async function updateBadge(){
 function navigate(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
   setAdminMobNav(pg);
-  const titles={dashboard:'Dashboard',employees:'Employees',attendance:'Attendance',leaves:'Leave Management',payroll:'Payroll',incentives:'Bonuses & Incentives',holidays:'Holiday Calendar',departments:'Departments',wellbeing:'Employee Wellbeing',announcements:'Announcements',documents:'Documents',reports:'Reports & Analytics'};
+  const titles={dashboard:'Dashboard',employees:'Employees',attendance:'Attendance',leaves:'Leave Management',payroll:'Payroll',incentives:'Bonuses & Incentives',holidays:'Holiday Calendar',activity:'Activity Calendar',scorecard:'Performance Scorecard',departments:'Departments',wellbeing:'Employee Wellbeing',announcements:'Announcements',documents:'Documents',reports:'Reports & Analytics'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,documents:renderDocuments,reports:renderReports})[pg]?.();
+  ({dashboard:renderDashboard,employees:renderEmployees,attendance:renderAttendance,leaves:renderLeaves,payroll:renderPayroll,incentives:renderIncentives,holidays:renderHolidays,activity:renderActivity,scorecard:renderScorecard,departments:renderDepartments,wellbeing:renderWellbeing,announcements:renderAnnouncements,documents:renderDocuments,reports:renderReports})[pg]?.();
 }
 
 function openMobDrawer(){document.getElementById('mob-drawer').classList.add('op');document.body.style.overflow='hidden';}
@@ -378,6 +383,10 @@ function setAdminMobNav(pg){
   document.querySelectorAll('.mob-nav-item').forEach(el=>el.classList.remove('on'));
   const el=document.getElementById('amn-'+pg);if(el)el.classList.add('on');
 }
+
+function pfInit(){PF.setup({sb,me:()=>me,isAdmin:true,emps:()=>employees,hols:()=>holidays});}
+function renderActivity(){pfInit();PF.calendar();}
+function renderScorecard(){pfInit();PF.scorecard();}
 
 // ─── DASHBOARD ───
 async function renderDashboard(){

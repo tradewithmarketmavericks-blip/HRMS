@@ -260,6 +260,8 @@ tr:last-child td{border-bottom:none}
       <div class="nl">HR Services</div>
       <div class="ni" data-pg="payslip"><i class="fas fa-file-invoice-dollar"></i>Payslip</div>
       <div class="ni" data-pg="holidays"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" data-pg="activity"><i class="fas fa-calendar-check"></i>Activity Calendar</div>
+      <div class="ni" data-pg="scorecard"><i class="fas fa-ranking-star"></i>My Scorecard</div>
       <div class="ni" data-pg="wellbeing"><i class="fas fa-heart-pulse"></i>Wellbeing Check-in</div>
       <div class="ni" data-pg="announcements"><i class="fas fa-bullhorn"></i>Announcements <span id="ann-badge" style="display:none;background:#EF4444;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">!</span></div>
       <div class="ni" data-pg="documents"><i class="fas fa-folder-open"></i>My Documents</div>
@@ -310,6 +312,8 @@ tr:last-child td{border-bottom:none}
       <div class="nl">HR Services</div>
       <div class="ni" onclick="nav('payslip');closeMobDrawer()"><i class="fas fa-file-invoice-dollar"></i>Payslip</div>
       <div class="ni" onclick="nav('holidays');closeMobDrawer()"><i class="fas fa-calendar-days"></i>Holiday Calendar</div>
+      <div class="ni" onclick="nav('activity');closeMobDrawer()"><i class="fas fa-calendar-check"></i>Activity Calendar</div>
+      <div class="ni" onclick="nav('scorecard');closeMobDrawer()"><i class="fas fa-ranking-star"></i>My Scorecard</div>
       <div class="ni" onclick="nav('wellbeing');closeMobDrawer()"><i class="fas fa-heart-pulse"></i>Wellbeing</div>
       <div class="ni" onclick="nav('announcements');closeMobDrawer()"><i class="fas fa-bullhorn"></i>Announcements<span id="mob-ann-badge" style="display:none;background:#EF4444;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:auto">!</span></div>
       <div class="ni" onclick="nav('documents');closeMobDrawer()"><i class="fas fa-folder-open"></i>My Documents</div>
@@ -323,6 +327,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script src="config.js"></script>
+<script src="perf.js"></script>
 <script>
 const {createClient}=supabase;
 const sb=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -389,12 +394,16 @@ async function loadAllEmp(){const {data}=await sb.from('employees').select('id,f
 function nav(pg){
   document.querySelectorAll('.ni[data-pg]').forEach(el=>el.classList.toggle('on',el.dataset.pg===pg));
   setMobNav(pg);
-  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',documents:'My Documents',myteam:'My Team',profile:'My Profile'};
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',leaves:'My Leaves',payslip:'Payslip',holidays:'Holiday Calendar',activity:'Activity Calendar',scorecard:'Performance Scorecard',wellbeing:'Wellbeing Check-in',announcements:'Announcements',directory:'Employee Directory',documents:'My Documents',myteam:'My Team',profile:'My Profile'};
   document.getElementById('tb-title').textContent=titles[pg]||pg;
   clearInterval(clockTimer);
   document.getElementById('ct').innerHTML='<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
-  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,documents:renderMyDocuments,myteam:renderMyTeam,profile:renderProfile})[pg]?.();
+  ({dashboard:renderDashboard,attendance:renderAttendance,leaves:renderLeaves,payslip:renderPayslip,holidays:renderHolidays,activity:renderActivity,scorecard:renderScorecard,wellbeing:renderWellbeing,announcements:renderAnnouncements,directory:renderDirectory,documents:renderMyDocuments,myteam:renderMyTeam,profile:renderProfile})[pg]?.();
 }
+
+function pfInit(){PF.setup({sb,me:()=>me,isAdmin:false,emps:()=>allEmployees,hols:()=>holidays});}
+function renderActivity(){pfInit();PF.calendar();}
+function renderScorecard(){pfInit();PF.scorecard();}
 
 // ─── DASHBOARD ───
 async function renderDashboard(){
